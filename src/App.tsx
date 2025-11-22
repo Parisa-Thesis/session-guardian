@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useSessionTracking } from "@/hooks/useSessionTracking";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -14,6 +15,7 @@ import ParentDashboard from "./pages/dashboard/parent/ParentDashboard";
 import Children from "./pages/dashboard/parent/Children";
 import Devices from "./pages/dashboard/parent/Devices";
 import ActivityLogs from "./pages/dashboard/parent/ActivityLogs";
+import SessionLogs from "./pages/dashboard/parent/SessionLogs";
 import ParentalControls from "./pages/dashboard/parent/ParentalControls";
 import Reports from "./pages/dashboard/parent/Reports";
 import Consents from "./pages/dashboard/parent/Consents";
@@ -27,9 +29,15 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
+const AppContent = () => {
+  useSessionTracking();
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <AppContent />
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -52,6 +60,7 @@ const App = () => (
             <Route path="children" element={<Children />} />
             <Route path="devices" element={<Devices />} />
             <Route path="activity-logs" element={<ActivityLogs />} />
+            <Route path="session-logs" element={<SessionLogs />} />
             <Route path="parental-controls" element={<ParentalControls />} />
             <Route path="reports" element={<Reports />} />
             <Route path="consents" element={<Consents />} />
