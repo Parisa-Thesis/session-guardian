@@ -14,6 +14,7 @@ import ParentDashboard from "./pages/dashboard/parent/ParentDashboard";
 import Children from "./pages/dashboard/parent/Children";
 import Devices from "./pages/dashboard/parent/Devices";
 import ActivityLogs from "./pages/dashboard/parent/ActivityLogs";
+import ParentalControls from "./pages/dashboard/parent/ParentalControls";
 import Reports from "./pages/dashboard/parent/Reports";
 import Consents from "./pages/dashboard/parent/Consents";
 import Sessions from "./pages/dashboard/parent/Sessions";
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="children" element={<Children />} />
             <Route path="devices" element={<Devices />} />
             <Route path="activity-logs" element={<ActivityLogs />} />
+            <Route path="parental-controls" element={<ParentalControls />} />
             <Route path="reports" element={<Reports />} />
             <Route path="consents" element={<Consents />} />
             <Route path="sessions" element={<Sessions />} />
