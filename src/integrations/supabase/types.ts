@@ -14,16 +14,597 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      child_daily_aggregate: {
+        Row: {
+          activity_date: string
+          child_id: string
+          created_at: string
+          id: string
+          laptop_minutes: number | null
+          phone_minutes: number | null
+          tablet_minutes: number | null
+          total_minutes: number
+          tv_minutes: number | null
+        }
+        Insert: {
+          activity_date: string
+          child_id: string
+          created_at?: string
+          id?: string
+          laptop_minutes?: number | null
+          phone_minutes?: number | null
+          tablet_minutes?: number | null
+          total_minutes?: number
+          tv_minutes?: number | null
+        }
+        Update: {
+          activity_date?: string
+          child_id?: string
+          created_at?: string
+          id?: string
+          laptop_minutes?: number | null
+          phone_minutes?: number | null
+          tablet_minutes?: number | null
+          total_minutes?: number
+          tv_minutes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "child_daily_aggregate_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      child_monthly_aggregate: {
+        Row: {
+          child_id: string
+          created_at: string
+          id: string
+          laptop_minutes: number | null
+          month: number
+          phone_minutes: number | null
+          tablet_minutes: number | null
+          total_minutes: number
+          tv_minutes: number | null
+          year: number
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          id?: string
+          laptop_minutes?: number | null
+          month: number
+          phone_minutes?: number | null
+          tablet_minutes?: number | null
+          total_minutes?: number
+          tv_minutes?: number | null
+          year: number
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          id?: string
+          laptop_minutes?: number | null
+          month?: number
+          phone_minutes?: number | null
+          tablet_minutes?: number | null
+          total_minutes?: number
+          tv_minutes?: number | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "child_monthly_aggregate_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      child_weekly_aggregate: {
+        Row: {
+          child_id: string
+          created_at: string
+          id: string
+          laptop_minutes: number | null
+          phone_minutes: number | null
+          tablet_minutes: number | null
+          total_minutes: number
+          tv_minutes: number | null
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          id?: string
+          laptop_minutes?: number | null
+          phone_minutes?: number | null
+          tablet_minutes?: number | null
+          total_minutes?: number
+          tv_minutes?: number | null
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          id?: string
+          laptop_minutes?: number | null
+          phone_minutes?: number | null
+          tablet_minutes?: number | null
+          total_minutes?: number
+          tv_minutes?: number | null
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "child_weekly_aggregate_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      children: {
+        Row: {
+          age: number | null
+          created_at: string
+          date_of_birth: string | null
+          id: string
+          name: string
+          parent_id: string
+          updated_at: string
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string
+          date_of_birth?: string | null
+          id?: string
+          name: string
+          parent_id: string
+          updated_at?: string
+        }
+        Update: {
+          age?: number | null
+          created_at?: string
+          date_of_birth?: string | null
+          id?: string
+          name?: string
+          parent_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "children_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consents: {
+        Row: {
+          child_id: string
+          consent_date: string | null
+          consent_given: boolean
+          consent_type: string | null
+          created_at: string
+          id: string
+          parent_id: string
+        }
+        Insert: {
+          child_id: string
+          consent_date?: string | null
+          consent_given?: boolean
+          consent_type?: string | null
+          created_at?: string
+          id?: string
+          parent_id: string
+        }
+        Update: {
+          child_id?: string
+          consent_date?: string | null
+          consent_given?: boolean
+          consent_type?: string | null
+          created_at?: string
+          id?: string
+          parent_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consents_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consents_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_catalog: {
+        Row: {
+          created_at: string
+          device_type: string
+          id: string
+          manufacturer: string
+          model: string
+          os: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_type: string
+          id?: string
+          manufacturer: string
+          model: string
+          os?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_type?: string
+          id?: string
+          manufacturer?: string
+          model?: string
+          os?: string | null
+        }
+        Relationships: []
+      }
+      devices: {
+        Row: {
+          child_id: string
+          created_at: string
+          device_catalog_id: string | null
+          device_identifier: string | null
+          device_name: string
+          id: string
+          last_active: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          device_catalog_id?: string | null
+          device_identifier?: string | null
+          device_name: string
+          id?: string
+          last_active?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          device_catalog_id?: string | null
+          device_identifier?: string | null
+          device_name?: string
+          id?: string
+          last_active?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devices_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devices_device_catalog_id_fkey"
+            columns: ["device_catalog_id"]
+            isOneToOne: false
+            referencedRelation: "device_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parental_checks: {
+        Row: {
+          child_id: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          parent_id: string
+          rule_config: Json | null
+          rule_type: string
+          updated_at: string
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          parent_id: string
+          rule_config?: Json | null
+          rule_type: string
+          updated_at?: string
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          parent_id?: string
+          rule_config?: Json | null
+          rule_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parental_checks_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parental_checks_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          name?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+        }
+        Relationships: []
+      }
+      research_logs: {
+        Row: {
+          action: string
+          data_accessed: string | null
+          id: string
+          researcher_id: string
+          timestamp: string
+        }
+        Insert: {
+          action: string
+          data_accessed?: string | null
+          id?: string
+          researcher_id: string
+          timestamp?: string
+        }
+        Update: {
+          action?: string
+          data_accessed?: string | null
+          id?: string
+          researcher_id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_logs_researcher_id_fkey"
+            columns: ["researcher_id"]
+            isOneToOne: false
+            referencedRelation: "researchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      researchers: {
+        Row: {
+          created_at: string
+          id: string
+          institution: string | null
+          research_area: string | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          institution?: string | null
+          research_area?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          institution?: string | null
+          research_area?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "researchers_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      screen_activity_analysis: {
+        Row: {
+          analysis_data: Json | null
+          analysis_date: string
+          child_id: string
+          created_at: string
+          id: string
+          most_used_app: string | null
+          peak_usage_hour: number | null
+          total_screen_time: number | null
+        }
+        Insert: {
+          analysis_data?: Json | null
+          analysis_date: string
+          child_id: string
+          created_at?: string
+          id?: string
+          most_used_app?: string | null
+          peak_usage_hour?: number | null
+          total_screen_time?: number | null
+        }
+        Update: {
+          analysis_data?: Json | null
+          analysis_date?: string
+          child_id?: string
+          created_at?: string
+          id?: string
+          most_used_app?: string | null
+          peak_usage_hour?: number | null
+          total_screen_time?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "screen_activity_analysis_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      screen_activity_logs: {
+        Row: {
+          activity_type: string | null
+          app_name: string | null
+          child_id: string
+          created_at: string
+          device_id: string
+          duration_minutes: number | null
+          id: string
+          session_id: string
+          timestamp: string
+        }
+        Insert: {
+          activity_type?: string | null
+          app_name?: string | null
+          child_id: string
+          created_at?: string
+          device_id: string
+          duration_minutes?: number | null
+          id?: string
+          session_id: string
+          timestamp?: string
+        }
+        Update: {
+          activity_type?: string | null
+          app_name?: string | null
+          child_id?: string
+          created_at?: string
+          device_id?: string
+          duration_minutes?: number | null
+          id?: string
+          session_id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "screen_activity_logs_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "screen_activity_logs_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "screen_activity_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "screen_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      screen_sessions: {
+        Row: {
+          child_id: string
+          created_at: string
+          device_id: string
+          duration_minutes: number | null
+          end_time: string | null
+          id: string
+          start_time: string
+          status: string | null
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          device_id: string
+          duration_minutes?: number | null
+          end_time?: string | null
+          id?: string
+          start_time: string
+          status?: string | null
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          device_id?: string
+          duration_minutes?: number | null
+          end_time?: string | null
+          id?: string
+          start_time?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "screen_sessions_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "screen_sessions_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { user_id: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "parent" | "researcher" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +731,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["parent", "researcher", "admin"],
+    },
   },
 } as const
