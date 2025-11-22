@@ -21,6 +21,7 @@ const Auth = () => {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const name = formData.get("name") as string;
+    const role = formData.get("role") as string;
 
     const { error } = await supabase.auth.signUp({
       email,
@@ -28,6 +29,7 @@ const Auth = () => {
       options: {
         data: {
           name,
+          role: role || "parent",
         },
       },
     });
@@ -156,6 +158,18 @@ const Auth = () => {
                     placeholder="••••••••"
                     required
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-role">I am a</Label>
+                  <select
+                    id="signup-role"
+                    name="role"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    required
+                  >
+                    <option value="parent">Parent - Monitor my children's screen time</option>
+                    <option value="researcher">Researcher - Access anonymized research data</option>
+                  </select>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Creating account..." : "Create Account"}
