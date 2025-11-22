@@ -154,31 +154,28 @@ export type Database = {
       }
       children: {
         Row: {
-          age: number | null
+          age_group: Database["public"]["Enums"]["age_group_enum"] | null
+          anonymous_id: string
           created_at: string
-          date_of_birth: string | null
           id: string
           name: string
           parent_id: string
-          updated_at: string
         }
         Insert: {
-          age?: number | null
+          age_group?: Database["public"]["Enums"]["age_group_enum"] | null
+          anonymous_id: string
           created_at?: string
-          date_of_birth?: string | null
           id?: string
           name: string
           parent_id: string
-          updated_at?: string
         }
         Update: {
-          age?: number | null
+          age_group?: Database["public"]["Enums"]["age_group_enum"] | null
+          anonymous_id?: string
           created_at?: string
-          date_of_birth?: string | null
           id?: string
           name?: string
           parent_id?: string
-          updated_at?: string
         }
         Relationships: [
           {
@@ -193,30 +190,30 @@ export type Database = {
       consents: {
         Row: {
           child_id: string
-          consent_date: string | null
-          consent_given: boolean
-          consent_type: string | null
           created_at: string
+          granted: boolean
+          granted_at: string | null
           id: string
           parent_id: string
+          researcher_id: string
         }
         Insert: {
           child_id: string
-          consent_date?: string | null
-          consent_given?: boolean
-          consent_type?: string | null
           created_at?: string
+          granted?: boolean
+          granted_at?: string | null
           id?: string
           parent_id: string
+          researcher_id: string
         }
         Update: {
           child_id?: string
-          consent_date?: string | null
-          consent_given?: boolean
-          consent_type?: string | null
           created_at?: string
+          granted?: boolean
+          granted_at?: string | null
           id?: string
           parent_id?: string
+          researcher_id?: string
         }
         Relationships: [
           {
@@ -238,26 +235,23 @@ export type Database = {
       device_catalog: {
         Row: {
           created_at: string
+          device_name: string
           device_type: string
           id: string
-          manufacturer: string
-          model: string
           os: string | null
         }
         Insert: {
           created_at?: string
+          device_name: string
           device_type: string
           id?: string
-          manufacturer: string
-          model: string
           os?: string | null
         }
         Update: {
           created_at?: string
+          device_name?: string
           device_type?: string
           id?: string
-          manufacturer?: string
-          model?: string
           os?: string | null
         }
         Relationships: []
@@ -604,6 +598,7 @@ export type Database = {
       }
     }
     Enums: {
+      age_group_enum: "0-2" | "3-5" | "6-8" | "9-11" | "12-14" | "15-17" | "18+"
       user_role: "parent" | "researcher" | "admin"
     }
     CompositeTypes: {
@@ -732,6 +727,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      age_group_enum: ["0-2", "3-5", "6-8", "9-11", "12-14", "15-17", "18+"],
       user_role: ["parent", "researcher", "admin"],
     },
   },
