@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Shield, Home, Smartphone, Activity, BarChart3, LogOut } from "lucide-react";
+import { Shield, Home, Smartphone, Activity, BarChart3, LogOut, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ const ParentDashboardLayout = () => {
 
   const navItems = [
     { path: "/dashboard/parent", icon: Home, label: "Overview" },
+    { path: "/dashboard/parent/children", icon: Users, label: "Children" },
     { path: "/dashboard/parent/devices", icon: Smartphone, label: "Devices" },
     { path: "/dashboard/parent/sessions", icon: Activity, label: "Sessions" },
     { path: "/dashboard/parent/charts", icon: BarChart3, label: "Analytics" },

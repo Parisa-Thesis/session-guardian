@@ -1,10 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Smartphone, Tablet, Monitor, Laptop, Trash2, Tv, Gamepad2 } from "lucide-react";
+import { Baby, User, UserCircle, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AddDeviceDialog } from "@/components/dashboard/AddDeviceDialog";
+import { AddChildDialog } from "@/components/dashboard/AddChildDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
@@ -20,58 +20,45 @@ import {
 } from "@/components/ui/alert-dialog";
 import { motion } from "framer-motion";
 
-const Devices = () => {
+const Children = () => {
   const queryClient = useQueryClient();
 
-  const { data: devices, isLoading } = useQuery({
-    queryKey: ["devices"],
+  const { data: children, isLoading } = useQuery({
+    queryKey: ["children"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       const { data } = await supabase
-        .from("devices")
-        .select(`
-          *,
-          children (
-            id,
-            name,
-            parent_id
-          )
-        `)
-        .eq("children.parent_id", user.id)
+        .from("children")
+        .select("*")
+        .eq("parent_id", user.id)
         .order("created_at", { ascending: false });
 
       return data || [];
     },
   });
 
-  const handleDelete = async (id: string, deviceType: string) => {
+  const handleDelete = async (id: string, name: string) => {
     try {
       const { error } = await supabase
-        .from("devices")
+        .from("children")
         .delete()
         .eq("id", id);
 
       if (error) throw error;
 
-      toast.success(`${deviceType} removed successfully`);
-      queryClient.invalidateQueries({ queryKey: ["devices"] });
+      toast.success(`${name} removed successfully`);
+      queryClient.invalidateQueries({ queryKey: ["children"] });
     } catch (error: any) {
-      toast.error(error.message || "Failed to remove device");
+      toast.error(error.message || "Failed to remove child");
     }
   };
 
-  const getDeviceIcon = (type: string) => {
-    const iconMap: Record<string, any> = {
-      Tablet: Tablet,
-      Phone: Smartphone,
-      Laptop: Laptop,
-      Desktop: Monitor,
-      TV: Tv,
-      "Game Console": Gamepad2,
-    };
-    return iconMap[type] || Smartphone;
+  const getAgeIcon = (ageGroup: string) => {
+    if (["0-2", "3-5"].includes(ageGroup)) return Baby;
+    if (["6-8", "9-11"].includes(ageGroup)) return User;
+    return UserCircle;
   };
 
   if (isLoading) {
@@ -80,7 +67,7 @@ const Devices = () => {
         <Skeleton className="h-20 w-full" />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-56" />
+            <Skeleton key={i} className="h-48" />
           ))}
         </div>
       </div>
@@ -91,28 +78,36 @@ const Devices = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold">Devices</h1>
-          <p className="text-muted-foreground mt-2">Manage connected devices for your children</p>
+          <h1 className="text-4xl font-bold">Children Profiles</h1>
+          <p className="text-muted-foreground mt-2">Manage your children's profiles and anonymous IDs</p>
         </div>
-        <AddDeviceDialog onDeviceAdded={() => queryClient.invalidateQueries({ queryKey: ["devices"] })} />
+        <AddChildDialog onChildAdded={() => queryClient.invalidateQueries({ queryKey: ["children"] })} />
       </div>
 
-      {devices && devices.length > 0 ? (
+      {children && children.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {devices.map((device: any, index) => {
-            const Icon = getDeviceIcon(device.device_type);
+          {children.map((child, index) => {
+            const AgeIcon = getAgeIcon(child.age_group || "");
             return (
               <motion.div
-                key={device.id}
+                key={child.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
               >
                 <Card className="group transition-all hover:shadow-lg hover:border-primary/50">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Icon className="h-6 w-6 text-primary" />
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <AgeIcon className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-xl">{child.name}</CardTitle>
+                          <CardDescription className="mt-1">
+                            Age: {child.age_group}
+                          </CardDescription>
+                        </div>
                       </div>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -126,15 +121,15 @@ const Devices = () => {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Remove Device?</AlertDialogTitle>
+                            <AlertDialogTitle>Remove {child.name}?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will permanently delete this device. This action cannot be undone.
+                              This will permanently delete this child's profile and all associated data. This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => handleDelete(device.id, device.device_type)}
+                              onClick={() => handleDelete(child.id, child.name)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
                               Remove
@@ -143,27 +138,20 @@ const Devices = () => {
                         </AlertDialogContent>
                       </AlertDialog>
                     </div>
-                    <CardTitle className="mt-4">{device.device_type}</CardTitle>
-                    <CardDescription>{device.children?.name}'s device</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {device.model && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Model:</span>
-                        <span className="font-medium">{device.model}</span>
-                      </div>
-                    )}
-                    {device.os && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">OS:</span>
-                        <Badge variant="secondary" className="font-normal">
-                          {device.os}
-                        </Badge>
-                      </div>
-                    )}
-                    <div className="pt-2 border-t">
+                  <CardContent className="space-y-4">
+                    <div className="rounded-lg bg-muted p-4">
+                      <p className="text-xs text-muted-foreground mb-1">Anonymous ID</p>
+                      <code className="text-lg font-mono font-bold text-primary">
+                        {child.anonymous_id}
+                      </code>
+                    </div>
+                    <div className="flex items-center justify-between pt-2">
+                      <Badge variant="secondary" className="font-normal">
+                        {child.age_group} years
+                      </Badge>
                       <p className="text-xs text-muted-foreground">
-                        Added {new Date(device.created_at).toLocaleDateString()}
+                        Added {new Date(child.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </CardContent>
@@ -175,12 +163,12 @@ const Devices = () => {
       ) : (
         <Card className="text-center py-12">
           <CardContent>
-            <Smartphone className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No devices registered yet</h3>
+            <User className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">No children profiles yet</h3>
             <p className="text-muted-foreground mb-6">
-              Add your first device to start tracking screen time
+              Add your first child profile to start monitoring their screen time
             </p>
-            <AddDeviceDialog onDeviceAdded={() => queryClient.invalidateQueries({ queryKey: ["devices"] })} />
+            <AddChildDialog onChildAdded={() => queryClient.invalidateQueries({ queryKey: ["children"] })} />
           </CardContent>
         </Card>
       )}
@@ -188,4 +176,4 @@ const Devices = () => {
   );
 };
 
-export default Devices;
+export default Children;
