@@ -260,35 +260,26 @@ export type Database = {
         Row: {
           child_id: string
           created_at: string
-          device_catalog_id: string | null
-          device_identifier: string | null
-          device_name: string
+          device_type: string
           id: string
-          last_active: string | null
-          status: string | null
-          updated_at: string
+          model: string | null
+          os: string | null
         }
         Insert: {
           child_id: string
           created_at?: string
-          device_catalog_id?: string | null
-          device_identifier?: string | null
-          device_name: string
+          device_type: string
           id?: string
-          last_active?: string | null
-          status?: string | null
-          updated_at?: string
+          model?: string | null
+          os?: string | null
         }
         Update: {
           child_id?: string
           created_at?: string
-          device_catalog_id?: string | null
-          device_identifier?: string | null
-          device_name?: string
+          device_type?: string
           id?: string
-          last_active?: string | null
-          status?: string | null
-          updated_at?: string
+          model?: string | null
+          os?: string | null
         }
         Relationships: [
           {
@@ -298,45 +289,32 @@ export type Database = {
             referencedRelation: "children"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "devices_device_catalog_id_fkey"
-            columns: ["device_catalog_id"]
-            isOneToOne: false
-            referencedRelation: "device_catalog"
-            referencedColumns: ["id"]
-          },
         ]
       }
       parental_checks: {
         Row: {
+          answer: string
+          checked_at: string
           child_id: string
-          created_at: string
           id: string
-          is_active: boolean | null
-          parent_id: string
-          rule_config: Json | null
-          rule_type: string
-          updated_at: string
+          is_correct: boolean
+          question: string
         }
         Insert: {
+          answer: string
+          checked_at: string
           child_id: string
-          created_at?: string
           id?: string
-          is_active?: boolean | null
-          parent_id: string
-          rule_config?: Json | null
-          rule_type: string
-          updated_at?: string
+          is_correct: boolean
+          question: string
         }
         Update: {
+          answer?: string
+          checked_at?: string
           child_id?: string
-          created_at?: string
           id?: string
-          is_active?: boolean | null
-          parent_id?: string
-          rule_config?: Json | null
-          rule_type?: string
-          updated_at?: string
+          is_correct?: boolean
+          question?: string
         }
         Relationships: [
           {
@@ -344,13 +322,6 @@ export type Database = {
             columns: ["child_id"]
             isOneToOne: false
             referencedRelation: "children"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "parental_checks_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -381,25 +352,31 @@ export type Database = {
       }
       research_logs: {
         Row: {
-          action: string
-          data_accessed: string | null
+          action_type: string
+          analysis_id: string | null
+          child_id: string
+          created_at: string
           id: string
+          notes: string | null
           researcher_id: string
-          timestamp: string
         }
         Insert: {
-          action: string
-          data_accessed?: string | null
+          action_type: string
+          analysis_id?: string | null
+          child_id: string
+          created_at: string
           id?: string
+          notes?: string | null
           researcher_id: string
-          timestamp?: string
         }
         Update: {
-          action?: string
-          data_accessed?: string | null
+          action_type?: string
+          analysis_id?: string | null
+          child_id?: string
+          created_at?: string
           id?: string
+          notes?: string | null
           researcher_id?: string
-          timestamp?: string
         }
         Relationships: [
           {
