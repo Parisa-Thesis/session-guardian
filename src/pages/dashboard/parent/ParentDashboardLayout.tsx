@@ -22,8 +22,8 @@ const ParentDashboardLayout = () => {
     { path: "/dashboard/parent/children", icon: Users, label: "Children" },
     { path: "/dashboard/parent/devices", icon: Smartphone, label: "Devices" },
     { path: "/dashboard/parent/activity-logs", icon: Clock, label: "Activity Logs" },
+    { path: "/dashboard/parent/parental-controls", icon: Shield, label: "Parental Controls" },
     { path: "/dashboard/parent/reports", icon: BarChart3, label: "Reports" },
-    { path: "/dashboard/parent/consents", icon: Shield, label: "Consents" },
     { path: "/dashboard/parent/sessions", icon: Activity, label: "Sessions" },
   ];
 

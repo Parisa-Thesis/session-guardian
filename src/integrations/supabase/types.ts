@@ -326,6 +326,50 @@ export type Database = {
           },
         ]
       }
+      parental_controls: {
+        Row: {
+          bedtime_end: string | null
+          bedtime_start: string | null
+          child_id: string
+          created_at: string
+          daily_time_limit_minutes: number | null
+          enabled: boolean | null
+          id: string
+          updated_at: string
+          warning_threshold_minutes: number | null
+        }
+        Insert: {
+          bedtime_end?: string | null
+          bedtime_start?: string | null
+          child_id: string
+          created_at?: string
+          daily_time_limit_minutes?: number | null
+          enabled?: boolean | null
+          id?: string
+          updated_at?: string
+          warning_threshold_minutes?: number | null
+        }
+        Update: {
+          bedtime_end?: string | null
+          bedtime_start?: string | null
+          child_id?: string
+          created_at?: string
+          daily_time_limit_minutes?: number | null
+          enabled?: boolean | null
+          id?: string
+          updated_at?: string
+          warning_threshold_minutes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parental_controls_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: true
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
