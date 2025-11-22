@@ -392,20 +392,17 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          institution: string | null
-          research_area: string | null
+          profile_id: string
         }
         Insert: {
           created_at?: string
           id: string
-          institution?: string | null
-          research_area?: string | null
+          profile_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          institution?: string | null
-          research_area?: string | null
+          profile_id?: string
         }
         Relationships: [
           {
@@ -419,78 +416,73 @@ export type Database = {
       }
       screen_activity_analysis: {
         Row: {
-          analysis_data: Json | null
-          analysis_date: string
-          child_id: string
           created_at: string
+          flagged_behaviours: string | null
           id: string
-          most_used_app: string | null
-          peak_usage_hour: number | null
-          total_screen_time: number | null
+          log_id: string
+          recommendations: string | null
+          researcher_id: string
+          risk_score: number
+          summary: string | null
         }
         Insert: {
-          analysis_data?: Json | null
-          analysis_date: string
-          child_id: string
           created_at?: string
+          flagged_behaviours?: string | null
           id?: string
-          most_used_app?: string | null
-          peak_usage_hour?: number | null
-          total_screen_time?: number | null
+          log_id: string
+          recommendations?: string | null
+          researcher_id: string
+          risk_score: number
+          summary?: string | null
         }
         Update: {
-          analysis_data?: Json | null
-          analysis_date?: string
-          child_id?: string
           created_at?: string
+          flagged_behaviours?: string | null
           id?: string
-          most_used_app?: string | null
-          peak_usage_hour?: number | null
-          total_screen_time?: number | null
+          log_id?: string
+          recommendations?: string | null
+          researcher_id?: string
+          risk_score?: number
+          summary?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "screen_activity_analysis_child_id_fkey"
-            columns: ["child_id"]
-            isOneToOne: false
-            referencedRelation: "children"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       screen_activity_logs: {
         Row: {
-          activity_type: string | null
-          app_name: string | null
+          activity_date: string
           child_id: string
           created_at: string
-          device_id: string
-          duration_minutes: number | null
+          device_type: string
+          hours_educational: number
+          hours_entertainment: number
+          hours_screen_time: number
           id: string
-          session_id: string
-          timestamp: string
+          notes: string | null
+          parent_id: string
         }
         Insert: {
-          activity_type?: string | null
-          app_name?: string | null
+          activity_date: string
           child_id: string
           created_at?: string
-          device_id: string
-          duration_minutes?: number | null
+          device_type: string
+          hours_educational: number
+          hours_entertainment: number
+          hours_screen_time: number
           id?: string
-          session_id: string
-          timestamp?: string
+          notes?: string | null
+          parent_id: string
         }
         Update: {
-          activity_type?: string | null
-          app_name?: string | null
+          activity_date?: string
           child_id?: string
           created_at?: string
-          device_id?: string
-          duration_minutes?: number | null
+          device_type?: string
+          hours_educational?: number
+          hours_entertainment?: number
+          hours_screen_time?: number
           id?: string
-          session_id?: string
-          timestamp?: string
+          notes?: string | null
+          parent_id?: string
         }
         Relationships: [
           {
@@ -498,20 +490,6 @@ export type Database = {
             columns: ["child_id"]
             isOneToOne: false
             referencedRelation: "children"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "screen_activity_logs_device_id_fkey"
-            columns: ["device_id"]
-            isOneToOne: false
-            referencedRelation: "devices"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "screen_activity_logs_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "screen_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -525,7 +503,6 @@ export type Database = {
           end_time: string | null
           id: string
           start_time: string
-          status: string | null
         }
         Insert: {
           child_id: string
@@ -535,7 +512,6 @@ export type Database = {
           end_time?: string | null
           id?: string
           start_time: string
-          status?: string | null
         }
         Update: {
           child_id?: string
@@ -545,7 +521,6 @@ export type Database = {
           end_time?: string | null
           id?: string
           start_time?: string
-          status?: string | null
         }
         Relationships: [
           {
