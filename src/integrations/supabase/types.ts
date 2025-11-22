@@ -583,6 +583,42 @@ export type Database = {
           },
         ]
       }
+      user_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string | null
+          login_time: string
+          logout_time: string | null
+          session_duration_seconds: number | null
+          user_agent: string | null
+          user_id: string
+          user_role: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          login_time?: string
+          logout_time?: string | null
+          session_duration_seconds?: number | null
+          user_agent?: string | null
+          user_id: string
+          user_role: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          login_time?: string
+          logout_time?: string | null
+          session_duration_seconds?: number | null
+          user_agent?: string | null
+          user_id?: string
+          user_role?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
