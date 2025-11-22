@@ -13,6 +13,7 @@ import ParentDashboardLayout from "./pages/dashboard/parent/ParentDashboardLayou
 import ParentDashboard from "./pages/dashboard/parent/ParentDashboard";
 import Children from "./pages/dashboard/parent/Children";
 import Devices from "./pages/dashboard/parent/Devices";
+import ActivityLogs from "./pages/dashboard/parent/ActivityLogs";
 import Sessions from "./pages/dashboard/parent/Sessions";
 import Charts from "./pages/dashboard/parent/Charts";
 
@@ -47,6 +48,7 @@ const App = () => (
             <Route index element={<ParentDashboard />} />
             <Route path="children" element={<Children />} />
             <Route path="devices" element={<Devices />} />
+            <Route path="activity-logs" element={<ActivityLogs />} />
             <Route path="sessions" element={<Sessions />} />
             <Route path="charts" element={<Charts />} />
           </Route>
