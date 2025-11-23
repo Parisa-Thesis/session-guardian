@@ -204,31 +204,31 @@ export function QuickSessionControl() {
         </Button>
 
         {hasActiveSessions && (
-          <div className="text-xs space-y-1 px-2 py-1.5 bg-muted rounded-md">
+          <div className="space-y-2 px-2 py-2">
             {activeSessions.map((session: any) => {
               const duration = sessionDurations[session.id] || 0;
 
               return (
                 <div
                   key={session.id}
-                  className="flex items-center justify-between gap-2"
+                  className="p-3 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 space-y-2"
                 >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{session.children.name}</p>
-                    <p className="text-muted-foreground truncate">
-                      {session.devices.device_type}
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-sm text-foreground">
+                      {session.children.name}
                     </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <Badge variant="secondary" className="text-[10px] font-mono">
+                    <Badge variant="secondary" className="text-[10px] font-semibold bg-primary text-primary-foreground">
                       Manual
                     </Badge>
-                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      <span className="font-mono">
-                        {formatDuration(duration)}
-                      </span>
-                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {session.devices.device_type}
+                  </p>
+                  <div className="flex items-center justify-center gap-2 py-2 px-3 bg-background/50 rounded-md">
+                    <Clock className="h-4 w-4 text-primary animate-pulse" />
+                    <span className="font-mono text-lg font-bold text-foreground tracking-wider">
+                      {formatDuration(duration)}
+                    </span>
                   </div>
                 </div>
               );
