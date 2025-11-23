@@ -18,10 +18,10 @@ const ResearcherDashboardLayout = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const navItems = [
-    { path: "/dashboard/researcher", icon: Home, label: "داشبورد" },
-    { path: "/dashboard/researcher/data", icon: Database, label: "داده‌ها" },
-    { path: "/dashboard/researcher/analytics", icon: BarChart3, label: "تحلیل‌ها" },
-    { path: "/dashboard/researcher/participants", icon: Users, label: "شرکت‌کنندگان" },
+    { path: "/dashboard/researcher", icon: Home, label: "Dashboard" },
+    { path: "/dashboard/researcher/data", icon: Database, label: "Data" },
+    { path: "/dashboard/researcher/analytics", icon: BarChart3, label: "Analytics" },
+    { path: "/dashboard/researcher/participants", icon: Users, label: "Participants" },
   ];
 
   return (
@@ -30,7 +30,7 @@ const ResearcherDashboardLayout = () => {
       <aside className="w-64 border-r bg-card">
         <div className="flex h-16 items-center border-b px-6">
           <Shield className="mr-2 h-6 w-6 text-primary" />
-          <span className="text-lg font-bold">پنل محقق</span>
+          <span className="text-lg font-bold">Researcher Panel</span>
         </div>
         <nav className="space-y-1 p-4">
           {navItems.map((item) => (
@@ -39,7 +39,7 @@ const ResearcherDashboardLayout = () => {
                 variant={isActive(item.path) ? "secondary" : "ghost"}
                 className="w-full justify-start"
               >
-                <item.icon className="ml-2 h-4 w-4" />
+                <item.icon className="mr-2 h-4 w-4" />
                 {item.label}
               </Button>
             </Link>
@@ -49,8 +49,8 @@ const ResearcherDashboardLayout = () => {
             className="w-full justify-start text-destructive hover:text-destructive"
             onClick={handleSignOut}
           >
-            <LogOut className="ml-2 h-4 w-4" />
-            خروج
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
           </Button>
         </nav>
       </aside>

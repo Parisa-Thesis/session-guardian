@@ -40,16 +40,16 @@ export const Header = () => {
           {user ? (
             <>
               <Button variant="ghost" onClick={handleSignOut}>
-                خروج
+                Sign Out
               </Button>
             </>
           ) : (
             <>
               <Link to="/auth">
-                <Button variant="ghost">ورود</Button>
+                <Button variant="ghost">Sign In</Button>
               </Link>
               <Link to="/auth">
-                <Button>ثبت نام</Button>
+                <Button>Sign Up</Button>
               </Link>
             </>
           )}

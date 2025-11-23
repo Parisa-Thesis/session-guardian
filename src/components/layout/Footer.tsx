@@ -15,27 +15,27 @@ export const Footer = () => {
               <span className="text-lg font-bold">Screen Guardian</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              پلتفرم حفاظت و مدیریت زمان استفاده از صفحه نمایش برای خانواده‌ها
+              Platform for screen time monitoring and digital wellbeing for families
             </p>
           </div>
 
           {/* Product */}
           <div>
-            <h3 className="font-semibold mb-4">محصول</h3>
+            <h3 className="font-semibold mb-4">Product</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  ویژگی‌ها
+                  Features
                 </Link>
               </li>
               <li>
                 <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  قیمت‌گذاری
+                  Pricing
                 </Link>
               </li>
               <li>
                 <Link to="/auth" className="text-muted-foreground hover:text-foreground transition-colors">
-                  شروع کنید
+                  Get Started
                 </Link>
               </li>
             </ul>
@@ -43,21 +43,21 @@ export const Footer = () => {
 
           {/* Company */}
           <div>
-            <h3 className="font-semibold mb-4">شرکت</h3>
+            <h3 className="font-semibold mb-4">Company</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  درباره ما
+                  About Us
                 </Link>
               </li>
               <li>
                 <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  تماس با ما
+                  Contact
                 </Link>
               </li>
               <li>
                 <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  وبلاگ
+                  Blog
                 </Link>
               </li>
             </ul>
@@ -65,21 +65,21 @@ export const Footer = () => {
 
           {/* Legal */}
           <div>
-            <h3 className="font-semibold mb-4">قوانین</h3>
+            <h3 className="font-semibold mb-4">Legal</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  حریم خصوصی
+                  Privacy
                 </Link>
               </li>
               <li>
                 <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  شرایط استفاده
+                  Terms of Service
                 </Link>
               </li>
               <li>
                 <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  امنیت
+                  Security
                 </Link>
               </li>
             </ul>
@@ -87,7 +87,7 @@ export const Footer = () => {
         </div>
 
         <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Screen Guardian. تمامی حقوق محفوظ است.</p>
+          <p>© {new Date().getFullYear()} Screen Guardian. All rights reserved.</p>
         </div>
       </div>
     </footer>
