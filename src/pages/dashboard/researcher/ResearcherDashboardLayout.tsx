@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Shield, Home, Database, BarChart3, LogOut, Users } from "lucide-react";
+import { Shield, Home, Database, BarChart3, LogOut, Users, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -22,6 +22,7 @@ const ResearcherDashboardLayout = () => {
     { path: "/dashboard/researcher/data", icon: Database, label: "Data" },
     { path: "/dashboard/researcher/analytics", icon: BarChart3, label: "Analytics" },
     { path: "/dashboard/researcher/participants", icon: Users, label: "Participants" },
+    { path: "/dashboard/researcher/session-logs", icon: Clock, label: "Session Logs" },
   ];
 
   return (
