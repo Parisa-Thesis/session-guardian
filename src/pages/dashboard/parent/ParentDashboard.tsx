@@ -7,6 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { NotificationSettings } from "@/components/dashboard/NotificationSettings";
 
 const ParentDashboard = () => {
   const { data, isLoading } = useParentData();
@@ -106,9 +107,18 @@ const ParentDashboard = () => {
 
       {/* Charts Section */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Daily Screen Time Chart */}
+        {/* Notification Settings */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <NotificationSettings />
+        </motion.div>
+
+        {/* Daily Screen Time Chart */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
@@ -152,8 +162,8 @@ const ParentDashboard = () => {
 
         {/* Activity Type Breakdown */}
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
           <Card className="shadow-lg">

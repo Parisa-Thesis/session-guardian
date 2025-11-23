@@ -1,9 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInMinutes } from "date-fns";
+import { useNotifications } from "./useNotifications";
+import { useEffect, useRef } from "react";
 
 export const useSessionMonitoring = () => {
-  return useQuery({
+  const { sendNotification, isGranted } = useNotifications();
+  const notifiedWarnings = useRef<Set<string>>(new Set());
+
+  const queryResult = useQuery({
     queryKey: ["session-monitoring"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -110,4 +115,38 @@ export const useSessionMonitoring = () => {
     },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+
+  // Send notifications for warnings
+  useEffect(() => {
+    if (!queryResult.data || !isGranted) return;
+
+    queryResult.data.warnings.forEach((warning) => {
+      const warningKey = `${warning.childId}-${warning.type}`;
+      
+      // Only notify once per warning
+      if (notifiedWarnings.current.has(warningKey)) return;
+
+      notifiedWarnings.current.add(warningKey);
+
+      if (warning.severity === "error") {
+        sendNotification(`⚠️ ${warning.childName}`, {
+          body: warning.message,
+          tag: warningKey,
+          requireInteraction: true,
+        });
+      } else if (warning.severity === "warning") {
+        sendNotification(`⏰ ${warning.childName}`, {
+          body: warning.message,
+          tag: warningKey,
+        });
+      }
+
+      // Clear notification after 5 minutes
+      setTimeout(() => {
+        notifiedWarnings.current.delete(warningKey);
+      }, 300000);
+    });
+  }, [queryResult.data, isGranted, sendNotification]);
+
+  return queryResult;
 };
