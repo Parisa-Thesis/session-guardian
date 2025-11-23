@@ -42,18 +42,21 @@ export const Header = () => {
 
     fetchUserData();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
       if (currentUser) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", currentUser.id)
-          .single();
-        
-        setProfile(profileData);
+        setTimeout(() => {
+          supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", currentUser.id)
+            .single()
+            .then(({ data: profileData }) => {
+              setProfile(profileData);
+            });
+        }, 0);
       } else {
         setProfile(null);
       }
@@ -63,9 +66,14 @@ export const Header = () => {
   }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
-    navigate("/");
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   const getDashboardLink = () => {
