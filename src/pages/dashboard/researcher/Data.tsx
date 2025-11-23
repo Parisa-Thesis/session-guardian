@@ -13,6 +13,8 @@ export default function ResearcherData() {
   const { data, isLoading } = useResearcherData();
   const [deviceFilter, setDeviceFilter] = useState<string>("all");
   const [searchId, setSearchId] = useState<string>("");
+  const [parentFilter, setParentFilter] = useState<string>("all");
+  const [childNameFilter, setChildNameFilter] = useState<string>("");
 
   // Fetch device catalog
   const { data: deviceCatalog } = useQuery({
@@ -28,6 +30,8 @@ export default function ResearcherData() {
     },
   });
 
+  const uniqueParents = Array.from(new Set(data?.consents.map(c => (c.profiles as any)?.email).filter(Boolean))) || [];
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -42,13 +46,17 @@ export default function ResearcherData() {
   }
 
   const filteredLogs = data?.activityLogs.filter(log => {
-    const child = data?.consents.find(c => c.child_id === log.child_id);
-    const anonymousId = (child?.children as any)?.anonymous_id || "";
+    const consent = data?.consents.find(c => c.child_id === log.child_id);
+    const anonymousId = (consent?.children as any)?.anonymous_id || "";
+    const childName = (consent?.children as any)?.name || "";
+    const parentEmail = (consent?.profiles as any)?.email || "";
     
     const matchesDevice = deviceFilter === "all" || log.device_type === deviceFilter;
     const matchesSearch = !searchId || anonymousId.toLowerCase().includes(searchId.toLowerCase());
+    const matchesParent = parentFilter === "all" || parentEmail === parentFilter;
+    const matchesChildName = !childNameFilter || childName.toLowerCase().includes(childNameFilter.toLowerCase());
     
-    return matchesDevice && matchesSearch;
+    return matchesDevice && matchesSearch && matchesParent && matchesChildName;
   }) || [];
 
   return (
@@ -69,16 +77,35 @@ export default function ResearcherData() {
         <Card className="p-4">
           <div className="flex items-center gap-4">
             <Filter className="h-5 w-5 text-muted-foreground" />
-            <div className="flex-1 flex gap-4">
+            <div className="flex-1 flex flex-wrap gap-4">
+              <Select value={parentFilter} onValueChange={setParentFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filter by parent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Parents</SelectItem>
+                  {uniqueParents.map((email) => (
+                    <SelectItem key={email} value={email}>
+                      {email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Input
-                placeholder="Search by Anonymous ID..."
+                placeholder="Search by child name..."
+                value={childNameFilter}
+                onChange={(e) => setChildNameFilter(e.target.value)}
+                className="max-w-[200px]"
+              />
+              <Input
+                placeholder="Search by ID..."
                 value={searchId}
                 onChange={(e) => setSearchId(e.target.value)}
-                className="max-w-xs"
+                className="max-w-[180px]"
               />
               <Select value={deviceFilter} onValueChange={setDeviceFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Filter by device" />
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Device type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Devices</SelectItem>

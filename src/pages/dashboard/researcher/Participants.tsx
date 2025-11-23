@@ -2,11 +2,32 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useResearcherData } from "@/hooks/useResearcherData";
-import { Users } from "lucide-react";
+import { Users, Filter, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 export default function ResearcherParticipants() {
   const { data, isLoading } = useResearcherData();
+  const [parentFilter, setParentFilter] = useState<string>("all");
+  const [childFilter, setChildFilter] = useState<string>("");
+
+  const filteredConsents = data?.consents.filter(consent => {
+    const parentEmail = (consent.profiles as any)?.email || "";
+    const parentName = (consent.profiles as any)?.name || "";
+    const childName = (consent.children as any)?.name || "";
+    const anonymousId = (consent.children as any)?.anonymous_id || "";
+    
+    const matchesParent = parentFilter === "all" || parentEmail === parentFilter;
+    const matchesChild = !childFilter || 
+      childName.toLowerCase().includes(childFilter.toLowerCase()) ||
+      anonymousId.toLowerCase().includes(childFilter.toLowerCase());
+    
+    return matchesParent && matchesChild;
+  }) || [];
+
+  const uniqueParents = Array.from(new Set(data?.consents.map(c => (c.profiles as any)?.email).filter(Boolean))) || [];
 
   if (isLoading) {
     return (
@@ -34,9 +55,38 @@ export default function ResearcherParticipants() {
           </div>
         </div>
         <Badge variant="outline" className="text-lg px-4 py-2">
-          {data?.consents.length || 0} participants
+          {filteredConsents.length} / {data?.consents.length || 0} participants
         </Badge>
       </div>
+
+      {data?.consents && data.consents.length > 0 && (
+        <Card className="p-4">
+          <div className="flex items-center gap-4">
+            <Filter className="h-5 w-5 text-muted-foreground" />
+            <div className="flex-1 flex gap-4">
+              <Select value={parentFilter} onValueChange={setParentFilter}>
+                <SelectTrigger className="w-[250px]">
+                  <SelectValue placeholder="Filter by parent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Parents</SelectItem>
+                  {uniqueParents.map((email) => (
+                    <SelectItem key={email} value={email}>
+                      {email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Search by child name or ID..."
+                value={childFilter}
+                onChange={(e) => setChildFilter(e.target.value)}
+                className="max-w-xs"
+              />
+            </div>
+          </div>
+        </Card>
+      )}
 
       {data?.stats.totalChildren === 0 ? (
         <Card className="p-12 text-center">
@@ -48,7 +98,7 @@ export default function ResearcherParticipants() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {data?.consents.map((consent, index) => {
+          {filteredConsents.map((consent, index) => {
             const childData = consent.children as any;
             const activityCount = data?.activityLogs.filter(
               log => log.child_id === consent.child_id
@@ -72,7 +122,11 @@ export default function ResearcherParticipants() {
                           Consented
                         </Badge>
                       </div>
-                      <div className="space-y-1 text-sm">
+                      <div className="space-y-2 text-sm">
+                        <p>
+                          <span className="text-muted-foreground">Child Name:</span>{" "}
+                          <span className="font-medium">{childData?.name || "Unknown"}</span>
+                        </p>
                         <p>
                           <span className="text-muted-foreground">Anonymous ID:</span>{" "}
                           <span className="font-mono">{childData?.anonymous_id || "Unknown"}</span>
@@ -85,6 +139,41 @@ export default function ResearcherParticipants() {
                           <span className="text-muted-foreground">Consent Date:</span>{" "}
                           <span>{new Date(consent.granted_at || consent.created_at).toLocaleDateString()}</span>
                         </p>
+                        <div className="pt-2 space-y-1">
+                          <p className="text-xs font-medium text-green-700 dark:text-green-400">Data Access:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {consent.data_scope_summary && (
+                              <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Stats
+                              </Badge>
+                            )}
+                            {consent.data_scope_activity_logs && (
+                              <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Activity Logs
+                              </Badge>
+                            )}
+                            {consent.data_scope_sessions && (
+                              <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Sessions
+                              </Badge>
+                            )}
+                            {consent.data_scope_location && (
+                              <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-700 dark:text-orange-400">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Location
+                              </Badge>
+                            )}
+                            {consent.data_scope_devices && (
+                              <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Devices
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
