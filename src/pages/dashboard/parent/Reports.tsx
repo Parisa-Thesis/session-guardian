@@ -18,7 +18,7 @@ export default function Reports() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { data: weeklyStats, isLoading: isLoadingWeekly } = useWeeklyStats();
 
-  // Fetch daily stats for selected date
+  // Fetch daily stats for selected date from screen_sessions
   const { data: dailyStats, isLoading: isLoadingDaily } = useQuery({
     queryKey: ["daily-stats", format(selectedDate, "yyyy-MM-dd")],
     queryFn: async () => {
@@ -33,24 +33,39 @@ export default function Reports() {
       if (!children || children.length === 0) return null;
 
       const childIds = children.map(c => c.id);
+      const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
 
-      const { data: aggregates } = await supabase
-        .from("child_daily_aggregate")
-        .select("*")
+      // Query screen_sessions for the selected date
+      const { data: sessions } = await supabase
+        .from("screen_sessions")
+        .select(`
+          *,
+          devices!inner(device_type)
+        `)
         .in("child_id", childIds)
-        .eq("activity_date", format(selectedDate, "yyyy-MM-dd"));
+        .gte("start_time", `${selectedDateStr}T00:00:00`)
+        .lte("start_time", `${selectedDateStr}T23:59:59`);
 
-      if (!aggregates || aggregates.length === 0) return null;
+      if (!sessions || sessions.length === 0) return null;
 
-      // Aggregate all children's data for the selected day
-      const dayData = aggregates.reduce((acc: any, agg: any) => {
-        return {
-          screenTime: acc.screenTime + ((agg.total_minutes || 0) / 60),
-          tv: acc.tv + ((agg.tv_minutes || 0) / 60),
-          phone: acc.phone + ((agg.phone_minutes || 0) / 60),
-          tablet: acc.tablet + ((agg.tablet_minutes || 0) / 60),
-          laptop: acc.laptop + ((agg.laptop_minutes || 0) / 60),
-        };
+      // Aggregate session data by device type
+      const dayData = sessions.reduce((acc: any, session: any) => {
+        const minutes = session.duration_minutes || 0;
+        const deviceType = session.devices?.device_type?.toLowerCase() || 'other';
+        
+        acc.screenTime += minutes;
+        
+        if (deviceType.includes('tv')) {
+          acc.tv += minutes;
+        } else if (deviceType.includes('phone')) {
+          acc.phone += minutes;
+        } else if (deviceType.includes('tablet')) {
+          acc.tablet += minutes;
+        } else if (deviceType.includes('laptop')) {
+          acc.laptop += minutes;
+        }
+        
+        return acc;
       }, {
         screenTime: 0,
         tv: 0,
@@ -59,7 +74,14 @@ export default function Reports() {
         laptop: 0,
       });
 
-      return dayData;
+      // Convert minutes to hours
+      return {
+        screenTime: dayData.screenTime / 60,
+        tv: dayData.tv / 60,
+        phone: dayData.phone / 60,
+        tablet: dayData.tablet / 60,
+        laptop: dayData.laptop / 60,
+      };
     },
   });
 
