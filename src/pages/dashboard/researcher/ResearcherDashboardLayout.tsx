@@ -23,11 +23,11 @@ const ResearcherDashboardLayout = () => {
 
   const navItems = [
     { path: "/dashboard/researcher", icon: Home, label: t('researcher.dashboard') },
-    { path: "/dashboard/researcher/data", icon: Database, label: t('researcher.data') },
-    { path: "/dashboard/researcher/analytics", icon: BarChart3, label: t('researcher.analytics') },
-    { path: "/dashboard/researcher/participants", icon: Users, label: t('researcher.participants') },
     { path: "/dashboard/researcher/consents", icon: Shield, label: "Consent Requests" },
-    { path: "/dashboard/researcher/session-logs", icon: Clock, label: t('researcher.sessionLogs') },
+    { path: "/dashboard/researcher/participants", icon: Users, label: t('researcher.participants') },
+    { path: "/dashboard/researcher/data", icon: Database, label: "Research Data" },
+    { path: "/dashboard/researcher/analytics", icon: BarChart3, label: t('researcher.analytics') },
+    { path: "/dashboard/researcher/session-logs", icon: Clock, label: "Parent Activity Logs" },
   ];
 
   return (
