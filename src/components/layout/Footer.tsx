@@ -28,33 +28,37 @@ export const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold mb-4">{t('footer.getStarted')}</h3>
-            <Link 
-              to="/get-started" 
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors block"
-            >
-              {t('footer.getStarted')} →
-            </Link>
+            <h3 className="font-semibold mb-4">Quick Links</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link 
+                  to="/get-started" 
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {t('footer.getStarted')}
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/about"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {t('footer.aboutUs')}
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/contact"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {t('footer.contact')}
+                </Link>
+              </li>
+            </ul>
           </div>
 
-          {/* About & Contact */}
-          <div>
-            <h3 className="font-semibold mb-4">{t('footer.aboutUs')}</h3>
-            <Link 
-              to="/about"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors block mb-2"
-            >
-              {t('footer.aboutUs')} →
-            </Link>
-            
-            <h3 className="font-semibold mb-4 mt-6">{t('footer.contact')}</h3>
-            <Link 
-              to="/contact"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors block"
-            >
-              {t('footer.contact')} →
-            </Link>
-          </div>
+          {/* Empty column for spacing */}
+          <div></div>
 
           {/* Privacy & Legal */}
           <div>
