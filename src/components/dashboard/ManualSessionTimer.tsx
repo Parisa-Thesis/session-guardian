@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlayCircle, StopCircle, Clock } from "lucide-react";
+import { PlayCircle, StopCircle, Clock, PauseCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,25 +15,41 @@ interface ManualSessionTimerProps {
   activeSessions: any[];
 }
 
+interface SessionPause {
+  session_id: string;
+  paused_at: string;
+  resumed_at: string | null;
+  reason: string;
+}
+
 export const ManualSessionTimer = ({ children, devices, activeSessions }: ManualSessionTimerProps) => {
   const queryClient = useQueryClient();
   const [selectedChild, setSelectedChild] = useState<string>("");
   const [selectedDevice, setSelectedDevice] = useState<string>("");
   const [sessionDurations, setSessionDurations] = useState<Record<string, number>>({});
+  const [pausedSessions, setPausedSessions] = useState<Record<string, SessionPause>>({});
 
   // Update session durations every second
   useEffect(() => {
     const interval = setInterval(() => {
       const durations: Record<string, number> = {};
       activeSessions.forEach((session) => {
-        const seconds = differenceInSeconds(new Date(), new Date(session.start_time));
-        durations[session.id] = seconds;
+        // Check if session is paused
+        const isPaused = pausedSessions[session.id];
+        if (isPaused && !isPaused.resumed_at) {
+          // Use time at pause
+          const seconds = differenceInSeconds(new Date(isPaused.paused_at), new Date(session.start_time));
+          durations[session.id] = seconds;
+        } else {
+          const seconds = differenceInSeconds(new Date(), new Date(session.start_time));
+          durations[session.id] = seconds;
+        }
       });
       setSessionDurations(durations);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [activeSessions]);
+  }, [activeSessions, pausedSessions]);
 
   const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -99,6 +115,36 @@ export const ManualSessionTimer = ({ children, devices, activeSessions }: Manual
       queryClient.invalidateQueries({ queryKey: ["parent-data"] });
       queryClient.invalidateQueries({ queryKey: ["session-monitoring"] });
     }
+  };
+
+  const handlePauseSession = async (sessionId: string, reason: string) => {
+    const pauseData: SessionPause = {
+      session_id: sessionId,
+      paused_at: new Date().toISOString(),
+      resumed_at: null,
+      reason: reason,
+    };
+
+    setPausedSessions(prev => ({ ...prev, [sessionId]: pauseData }));
+    toast.info(`Session paused for ${reason}`);
+  };
+
+  const handleResumeSession = async (sessionId: string) => {
+    const pause = pausedSessions[sessionId];
+    if (!pause) return;
+
+    const updatedPause = {
+      ...pause,
+      resumed_at: new Date().toISOString(),
+    };
+
+    setPausedSessions(prev => ({ ...prev, [sessionId]: updatedPause }));
+    toast.success("Session resumed!");
+  };
+
+  const isSessionPaused = (sessionId: string) => {
+    const pause = pausedSessions[sessionId];
+    return pause && !pause.resumed_at;
   };
 
   const childDevices = selectedChild
@@ -179,6 +225,8 @@ export const ManualSessionTimer = ({ children, devices, activeSessions }: Manual
               const child = children.find((c) => c.id === session.child_id);
               const device = devices.find((d) => d.id === session.device_id);
               const duration = sessionDurations[session.id] || 0;
+              const isPaused = isSessionPaused(session.id);
+              const pauseReason = pausedSessions[session.id]?.reason;
 
               return (
                 <div
@@ -188,28 +236,70 @@ export const ManualSessionTimer = ({ children, devices, activeSessions }: Manual
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
                       <p className="font-semibold">{child?.name}</p>
-                      <Badge variant="default" className="bg-green-500">
-                        Active
+                      <Badge variant={isPaused ? "secondary" : "default"} className={isPaused ? "bg-yellow-500/10 text-yellow-600" : "bg-green-500"}>
+                        {isPaused ? "Paused" : "Active"}
                       </Badge>
+                      {isPaused && pauseReason && (
+                        <Badge variant="outline" className="text-xs">
+                          {pauseReason}
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {device?.device_type} - {device?.model || "Unknown"}
                     </p>
                     <div className="flex items-center gap-2 text-sm">
-                      <Clock className="h-3 w-3" />
-                      <span className="font-mono font-bold text-lg">
+                      <Clock className={`h-3 w-3 ${isPaused ? '' : 'animate-pulse'}`} />
+                      <span className={`font-mono font-bold text-lg ${isPaused ? 'text-muted-foreground' : ''}`}>
                         {formatDuration(duration)}
                       </span>
                     </div>
                   </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleStopSession(session.id)}
-                  >
-                    <StopCircle className="mr-2 h-4 w-4" />
-                    Stop
-                  </Button>
+                  <div className="flex gap-2">
+                    {!isPaused ? (
+                      <>
+                        <Select onValueChange={(reason) => handlePauseSession(session.id, reason)}>
+                          <SelectTrigger className="w-[140px]">
+                            <PauseCircle className="mr-2 h-4 w-4" />
+                            Pause
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Meal time">Meal time</SelectItem>
+                            <SelectItem value="Homework">Homework</SelectItem>
+                            <SelectItem value="Break">Break</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleStopSession(session.id)}
+                        >
+                          <StopCircle className="mr-2 h-4 w-4" />
+                          Stop
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleResumeSession(session.id)}
+                        >
+                          <PlayCircle className="mr-2 h-4 w-4" />
+                          Resume
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleStopSession(session.id)}
+                        >
+                          <StopCircle className="mr-2 h-4 w-4" />
+                          Stop
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
               );
             })}
