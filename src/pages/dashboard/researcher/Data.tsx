@@ -25,19 +25,23 @@ export default function ResearcherData() {
     return (consent.profiles as any)?.email === parentFilter;
   }) || [];
 
-  // Get devices used by selected child from activity logs
+  // Get devices used by selected child from activity logs with counts
   const { data: childDevices } = useQuery({
     queryKey: ["child-devices", childFilter, data?.activityLogs],
     queryFn: async () => {
       if (childFilter === "all" || !data?.activityLogs) return [];
       
-      // Get unique device types from activity logs for this child
+      // Get device types and count activities for each
       const childLogs = data.activityLogs.filter(log => log.child_id === childFilter);
-      const uniqueDeviceTypes = Array.from(new Set(childLogs.map(log => log.device_type)));
+      const deviceCounts = childLogs.reduce((acc, log) => {
+        acc[log.device_type] = (acc[log.device_type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
       
-      return uniqueDeviceTypes.map(deviceType => ({
+      return Object.entries(deviceCounts).map(([deviceType, count]) => ({
         device_type: deviceType,
         device_name: deviceType.charAt(0).toUpperCase() + deviceType.slice(1),
+        activity_count: count,
       }));
     },
     enabled: childFilter !== "all" && !!data,
@@ -54,6 +58,14 @@ export default function ResearcherData() {
   const handleChildChange = (value: string) => {
     setChildFilter(value);
     setDeviceFilter("all");
+  };
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setParentFilter("all");
+    setChildFilter("all");
+    setDeviceFilter("all");
+    setSearchId("");
   };
 
   if (isLoading) {
@@ -100,7 +112,7 @@ export default function ResearcherData() {
         <Card className="p-4 bg-card">
           <div className="flex items-center gap-4">
             <Filter className="h-5 w-5 text-muted-foreground" />
-            <div className="flex-1 flex flex-wrap gap-3">
+            <div className="flex-1 flex flex-wrap items-center gap-3">
               <Select value={parentFilter} onValueChange={handleParentChange}>
                 <SelectTrigger className="w-[220px] bg-background">
                   <SelectValue placeholder="Select parent" />
@@ -145,7 +157,7 @@ export default function ResearcherData() {
                   <SelectItem value="all">All Devices</SelectItem>
                   {childDevices?.map((device) => (
                     <SelectItem key={device.device_type} value={device.device_type}>
-                      {device.device_name}
+                      {device.device_name} ({device.activity_count} activities)
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -157,6 +169,15 @@ export default function ResearcherData() {
                 onChange={(e) => setSearchId(e.target.value)}
                 className="max-w-[200px] bg-background"
               />
+              
+              {(parentFilter !== "all" || childFilter !== "all" || deviceFilter !== "all" || searchId) && (
+                <button
+                  onClick={handleClearFilters}
+                  className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors underline"
+                >
+                  Clear All Filters
+                </button>
+              )}
             </div>
           </div>
         </Card>
