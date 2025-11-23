@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Shield, Home, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Home, User, LogOut, LayoutDashboard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import logo from "@/assets/logo.png";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -101,9 +102,7 @@ export const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-primary/10">
-            <Shield className="h-5 w-5 text-primary" />
-          </div>
+          <img src={logo} alt="Screen Guardian" className="h-8 w-auto" />
           <span className="text-lg font-bold">{t('parent.screenGuardian')}</span>
         </Link>
 
