@@ -11,26 +11,37 @@ const Index = () => {
 
   useEffect(() => {
     const checkAuthAndRedirect = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        // Get user role and redirect to appropriate dashboard
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", session.user.id)
-          .single();
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          // Get user role and redirect to appropriate dashboard
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", session.user.id)
+            .single();
 
-        if (profile?.role) {
-          navigate(`/dashboard/${profile.role}`, { replace: true });
-          return;
+          if (profile?.role) {
+            navigate(`/dashboard/${profile.role}`, { replace: true });
+            return;
+          }
         }
+      } catch (error) {
+        console.error("Auth check error:", error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
+    // Set a timeout to ensure page loads even if auth check hangs
+    const timeout = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
+
     checkAuthAndRedirect();
+
+    return () => clearTimeout(timeout);
   }, [navigate]);
 
   if (loading) {
