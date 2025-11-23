@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { useResearcherData } from "@/hooks/useResearcherData";
-import { TrendingUp, Smartphone, Clock, Activity } from "lucide-react";
+import { TrendingUp, Smartphone, Clock, Activity, Calendar, Users2 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   LineChart,
@@ -19,8 +20,17 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
 } from "recharts";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format, subDays, isWithinInterval } from "date-fns";
 
 const COLORS = {
   phone: "hsl(var(--chart-1))",
@@ -33,13 +43,37 @@ const COLORS = {
 
 export default function ResearcherAnalytics() {
   const { data, isLoading } = useResearcherData();
+  
+  // Date range state
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Quick date range shortcuts
+  const setQuickRange = (days: number) => {
+    setDateRange({
+      from: subDays(new Date(), days),
+      to: new Date(),
+    });
+    setShowDatePicker(false);
+  };
 
   // Process data for charts
   const chartData = useMemo(() => {
     if (!data?.activityLogs) return null;
 
+    // Filter by date range
+    const filteredLogs = data.activityLogs.filter((log) =>
+      isWithinInterval(new Date(log.activity_date), {
+        start: dateRange.from,
+        end: dateRange.to,
+      })
+    );
+
     // Device usage distribution
-    const deviceUsage = data.activityLogs.reduce((acc, log) => {
+    const deviceUsage = filteredLogs.reduce((acc, log) => {
       const device = log.device_type;
       acc[device] = (acc[device] || 0) + log.hours_screen_time;
       return acc;
@@ -50,8 +84,8 @@ export default function ResearcherAnalytics() {
       value: Math.round(value * 10) / 10,
     }));
 
-    // Daily screen time trend (last 14 days)
-    const dailyData = data.activityLogs
+    // Daily screen time trend
+    const dailyData = filteredLogs
       .reduce((acc, log) => {
         const date = log.activity_date;
         const existing = acc.find((d) => d.date === date);
@@ -69,11 +103,10 @@ export default function ResearcherAnalytics() {
         }
         return acc;
       }, [] as any[])
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(-14);
+      .sort((a, b) => a.date.localeCompare(b.date));
 
     // Educational vs Entertainment
-    const contentTypeData = data.activityLogs.reduce(
+    const contentTypeData = filteredLogs.reduce(
       (acc, log) => {
         acc.educational += log.hours_educational;
         acc.entertainment += log.hours_entertainment;
@@ -89,12 +122,87 @@ export default function ResearcherAnalytics() {
 
     // Average screen time by device
     const deviceAverages = Object.entries(deviceUsage).map(([name, total]) => {
-      const count = data.activityLogs.filter((log) => log.device_type === name).length;
+      const count = filteredLogs.filter((log) => log.device_type === name).length;
       return {
         device: name.charAt(0).toUpperCase() + name.slice(1),
         average: Math.round((total / count) * 10) / 10,
       };
     });
+
+    // Age group analysis
+    const ageGroupData = data.consents.reduce((acc, consent) => {
+      const child = consent.children as any;
+      const ageGroup = child?.age_group || "unknown";
+      
+      const childLogs = filteredLogs.filter((log) => log.child_id === consent.child_id);
+      const totalTime = childLogs.reduce((sum, log) => sum + log.hours_screen_time, 0);
+      const eduTime = childLogs.reduce((sum, log) => sum + log.hours_educational, 0);
+      const entTime = childLogs.reduce((sum, log) => sum + log.hours_entertainment, 0);
+      
+      if (!acc[ageGroup]) {
+        acc[ageGroup] = {
+          ageGroup,
+          totalTime: 0,
+          educationalTime: 0,
+          entertainmentTime: 0,
+          participants: 0,
+          avgDaily: 0,
+        };
+      }
+      
+      acc[ageGroup].totalTime += totalTime;
+      acc[ageGroup].educationalTime += eduTime;
+      acc[ageGroup].entertainmentTime += entTime;
+      acc[ageGroup].participants += 1;
+      
+      return acc;
+    }, {} as Record<string, any>);
+
+    const ageGroupChartData = Object.values(ageGroupData).map((group: any) => ({
+      ageGroup: group.ageGroup,
+      avgScreenTime: Math.round((group.totalTime / group.participants) * 10) / 10,
+      avgEducational: Math.round((group.educationalTime / group.participants) * 10) / 10,
+      avgEntertainment: Math.round((group.entertainmentTime / group.participants) * 10) / 10,
+      participants: group.participants,
+    }));
+
+    // Device preference by age group
+    const ageDeviceData = data.consents.map((consent) => {
+      const child = consent.children as any;
+      const ageGroup = child?.age_group || "unknown";
+      const childLogs = filteredLogs.filter((log) => log.child_id === consent.child_id);
+      
+      const deviceTotals = childLogs.reduce((acc, log) => {
+        acc[log.device_type] = (acc[log.device_type] || 0) + log.hours_screen_time;
+        return acc;
+      }, {} as Record<string, number>);
+
+      return {
+        ageGroup,
+        phone: deviceTotals.phone || 0,
+        tablet: deviceTotals.tablet || 0,
+        laptop: deviceTotals.laptop || 0,
+        tv: deviceTotals.tv || 0,
+      };
+    }).reduce((acc, curr) => {
+      const existing = acc.find((item) => item.ageGroup === curr.ageGroup);
+      if (existing) {
+        existing.phone += curr.phone;
+        existing.tablet += curr.tablet;
+        existing.laptop += curr.laptop;
+        existing.tv += curr.tv;
+        existing.count += 1;
+      } else {
+        acc.push({ ...curr, count: 1 });
+      }
+      return acc;
+    }, [] as any[]).map((item) => ({
+      ageGroup: item.ageGroup,
+      phone: Math.round((item.phone / item.count) * 10) / 10,
+      tablet: Math.round((item.tablet / item.count) * 10) / 10,
+      laptop: Math.round((item.laptop / item.count) * 10) / 10,
+      tv: Math.round((item.tv / item.count) * 10) / 10,
+    }));
 
     // Weekly aggregate trends
     const weeklyData = data.aggregates.weekly
@@ -114,8 +222,11 @@ export default function ResearcherAnalytics() {
       contentData,
       deviceAverages,
       weeklyData,
+      ageGroupChartData,
+      ageDeviceData,
+      totalDataPoints: filteredLogs.length,
     };
-  }, [data]);
+  }, [data, dateRange]);
 
   if (isLoading) {
     return (
@@ -156,7 +267,7 @@ export default function ResearcherAnalytics() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
             <TrendingUp className="h-6 w-6 text-primary" />
@@ -166,7 +277,80 @@ export default function ResearcherAnalytics() {
             <p className="text-muted-foreground">Data trends and behavioral insights</p>
           </div>
         </div>
+
+        {/* Date Range Filters */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant={dateRange.from.getTime() === subDays(new Date(), 7).getTime() ? "default" : "outline"}
+            size="sm"
+            onClick={() => setQuickRange(7)}
+          >
+            7 Days
+          </Button>
+          <Button
+            variant={dateRange.from.getTime() === subDays(new Date(), 30).getTime() ? "default" : "outline"}
+            size="sm"
+            onClick={() => setQuickRange(30)}
+          >
+            30 Days
+          </Button>
+          <Button
+            variant={dateRange.from.getTime() === subDays(new Date(), 90).getTime() ? "default" : "outline"}
+            size="sm"
+            onClick={() => setQuickRange(90)}
+          >
+            90 Days
+          </Button>
+          
+          <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Calendar className="h-4 w-4" />
+                {format(dateRange.from, "MMM d")} - {format(dateRange.to, "MMM d, yyyy")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <div className="p-3 space-y-3">
+                <div>
+                  <p className="text-sm font-medium mb-2">From Date</p>
+                  <CalendarComponent
+                    mode="single"
+                    selected={dateRange.from}
+                    onSelect={(date) => date && setDateRange({ ...dateRange, from: date })}
+                    disabled={(date) => date > new Date() || date > dateRange.to}
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-2">To Date</p>
+                  <CalendarComponent
+                    mode="single"
+                    selected={dateRange.to}
+                    onSelect={(date) => date && setDateRange({ ...dateRange, to: date })}
+                    disabled={(date) => date > new Date() || date < dateRange.from}
+                  />
+                </div>
+                <Button className="w-full" onClick={() => setShowDatePicker(false)}>
+                  Apply
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
+
+      {/* Active Filters Display */}
+      <Card className="p-4">
+        <div className="flex items-center gap-4 text-sm">
+          <Badge variant="outline" className="gap-2">
+            <Calendar className="h-3 w-3" />
+            {format(dateRange.from, "MMM d, yyyy")} - {format(dateRange.to, "MMM d, yyyy")}
+          </Badge>
+          <Badge variant="outline" className="gap-2">
+            <Activity className="h-3 w-3" />
+            {chartData?.totalDataPoints || 0} data points
+          </Badge>
+        </div>
+      </Card>
 
       {/* Key Metrics */}
       <div className="grid gap-6 md:grid-cols-4">
@@ -175,12 +359,12 @@ export default function ResearcherAnalytics() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Activity className="h-4 w-4 text-muted-foreground" />
-                Total Data Points
+                Data Points
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.stats.totalDataPoints}</div>
-              <p className="text-xs text-muted-foreground mt-1">Activity logs collected</p>
+              <div className="text-2xl font-bold">{chartData?.totalDataPoints || 0}</div>
+              <p className="text-xs text-muted-foreground mt-1">In selected range</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -264,7 +448,7 @@ export default function ResearcherAnalytics() {
         >
           <Card>
             <CardHeader>
-              <CardTitle>Daily Screen Time Trend (Last 14 Days)</CardTitle>
+              <CardTitle>Daily Screen Time Trend</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -438,7 +622,7 @@ export default function ResearcherAnalytics() {
         </motion.div>
       </div>
 
-      {/* Weekly Trends */}
+      {/* Age Group Comparative Analysis */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -446,7 +630,134 @@ export default function ResearcherAnalytics() {
       >
         <Card>
           <CardHeader>
-            <CardTitle>Weekly Screen Time by Device (Last 8 Weeks)</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Users2 className="h-5 w-5" />
+              Screen Time by Age Group
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={chartData?.ageGroupChartData || []}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis
+                  dataKey="ageGroup"
+                  className="text-xs"
+                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                />
+                <YAxis
+                  className="text-xs"
+                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                  label={{ value: "Avg Hours", angle: -90, position: "insideLeft" }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
+                  }}
+                />
+                <Legend />
+                <Bar
+                  dataKey="avgScreenTime"
+                  fill={COLORS.phone}
+                  name="Total Screen Time"
+                  radius={[8, 8, 0, 0]}
+                />
+                <Bar
+                  dataKey="avgEducational"
+                  fill={COLORS.educational}
+                  name="Educational"
+                  radius={[8, 8, 0, 0]}
+                />
+                <Bar
+                  dataKey="avgEntertainment"
+                  fill={COLORS.entertainment}
+                  name="Entertainment"
+                  radius={[8, 8, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Device Preferences by Age Group */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.9 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Smartphone className="h-5 w-5" />
+              Device Preferences by Age Group
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={350}>
+              <RadarChart data={chartData?.ageDeviceData || []}>
+                <PolarGrid className="stroke-muted" />
+                <PolarAngleAxis
+                  dataKey="ageGroup"
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                />
+                <PolarRadiusAxis
+                  angle={90}
+                  domain={[0, "auto"]}
+                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                />
+                <Radar
+                  name="Phone"
+                  dataKey="phone"
+                  stroke={COLORS.phone}
+                  fill={COLORS.phone}
+                  fillOpacity={0.6}
+                />
+                <Radar
+                  name="Tablet"
+                  dataKey="tablet"
+                  stroke={COLORS.tablet}
+                  fill={COLORS.tablet}
+                  fillOpacity={0.6}
+                />
+                <Radar
+                  name="Laptop"
+                  dataKey="laptop"
+                  stroke={COLORS.laptop}
+                  fill={COLORS.laptop}
+                  fillOpacity={0.6}
+                />
+                <Radar
+                  name="TV"
+                  dataKey="tv"
+                  stroke={COLORS.tv}
+                  fill={COLORS.tv}
+                  fillOpacity={0.6}
+                />
+                <Legend />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
+                  }}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Weekly Trends */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.0 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Weekly Screen Time by Device</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={350}>
