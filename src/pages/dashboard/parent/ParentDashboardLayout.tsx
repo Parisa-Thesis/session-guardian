@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Shield, Home, Smartphone, Activity, BarChart3, LogOut, Users, Clock } from "lucide-react";
+import { Shield, Home, Smartphone, Activity, BarChart3, LogOut, Users, Clock, Wifi } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -21,8 +21,9 @@ const ParentDashboardLayout = () => {
     { path: "/dashboard/parent", icon: Home, label: "Overview" },
     { path: "/dashboard/parent/children", icon: Users, label: "Children" },
     { path: "/dashboard/parent/devices", icon: Smartphone, label: "Devices" },
-    { path: "/dashboard/parent/activity-logs", icon: Clock, label: "Activity Logs" },
-    { path: "/dashboard/parent/session-logs", icon: Activity, label: "Session Logs" },
+    { path: "/dashboard/parent/sessions", icon: Clock, label: "Sessions" },
+    { path: "/dashboard/parent/device-integration", icon: Wifi, label: "Auto Tracking" },
+    { path: "/dashboard/parent/activity-logs", icon: Activity, label: "Activity Logs" },
     { path: "/dashboard/parent/parental-controls", icon: Shield, label: "Parental Controls" },
     { path: "/dashboard/parent/reports", icon: BarChart3, label: "Reports" },
   ];
