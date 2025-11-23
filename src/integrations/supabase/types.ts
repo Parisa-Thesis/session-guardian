@@ -158,6 +158,8 @@ export type Database = {
           anonymous_id: string
           created_at: string
           id: string
+          last_location: string | null
+          last_location_updated_at: string | null
           name: string
           parent_id: string
         }
@@ -166,6 +168,8 @@ export type Database = {
           anonymous_id: string
           created_at?: string
           id?: string
+          last_location?: string | null
+          last_location_updated_at?: string | null
           name: string
           parent_id: string
         }
@@ -174,6 +178,8 @@ export type Database = {
           anonymous_id?: string
           created_at?: string
           id?: string
+          last_location?: string | null
+          last_location_updated_at?: string | null
           name?: string
           parent_id?: string
         }
@@ -260,24 +266,33 @@ export type Database = {
         Row: {
           child_id: string
           created_at: string
+          device_name: string | null
           device_type: string
           id: string
+          ip_address: string | null
+          last_used_at: string | null
           model: string | null
           os: string | null
         }
         Insert: {
           child_id: string
           created_at?: string
+          device_name?: string | null
           device_type: string
           id?: string
+          ip_address?: string | null
+          last_used_at?: string | null
           model?: string | null
           os?: string | null
         }
         Update: {
           child_id?: string
           created_at?: string
+          device_name?: string | null
           device_type?: string
           id?: string
+          ip_address?: string | null
+          last_used_at?: string | null
           model?: string | null
           os?: string | null
         }
@@ -543,28 +558,40 @@ export type Database = {
           child_id: string
           created_at: string
           device_id: string
+          device_metadata: Json | null
           duration_minutes: number | null
           end_time: string | null
           id: string
+          ip_address: string | null
+          location: string | null
           start_time: string
+          user_agent: string | null
         }
         Insert: {
           child_id: string
           created_at?: string
           device_id: string
+          device_metadata?: Json | null
           duration_minutes?: number | null
           end_time?: string | null
           id?: string
+          ip_address?: string | null
+          location?: string | null
           start_time: string
+          user_agent?: string | null
         }
         Update: {
           child_id?: string
           created_at?: string
           device_id?: string
+          device_metadata?: Json | null
           duration_minutes?: number | null
           end_time?: string | null
           id?: string
+          ip_address?: string | null
+          location?: string | null
           start_time?: string
+          user_agent?: string | null
         }
         Relationships: [
           {
