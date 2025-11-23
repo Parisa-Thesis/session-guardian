@@ -5,14 +5,21 @@ import { Label } from "@/components/ui/label";
 import { Bell, BellOff, Check } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const NotificationSettings = () => {
-  const { isSupported, isGranted, requestPermission, sendNotification } = useNotifications();
-  const [notifyOnLimit, setNotifyOnLimit] = useState(true);
-  const [notifyOnBedtime, setNotifyOnBedtime] = useState(true);
-  const [notifyOnWarning, setNotifyOnWarning] = useState(true);
+  const {
+    isSupported,
+    isGranted,
+    browserPermissionGranted,
+    requestPermission,
+    disableNotifications,
+    sendNotification,
+    updatePreference,
+    preferences,
+    isLoading,
+  } = useNotifications();
 
   const handleEnableNotifications = async () => {
     const granted = await requestPermission();
@@ -21,6 +28,10 @@ export const NotificationSettings = () => {
         body: "Notifications are now enabled! You'll be alerted about important events.",
       });
     }
+  };
+
+  const handleDisableNotifications = async () => {
+    await disableNotifications();
   };
 
   const handleTestNotification = () => {
@@ -46,6 +57,22 @@ export const NotificationSettings = () => {
             Your browser doesn't support notifications. Try using Chrome, Firefox, or Safari.
           </CardDescription>
         </CardHeader>
+      </Card>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Notification Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-24 w-full" />
+        </CardContent>
       </Card>
     );
   }
@@ -81,21 +108,42 @@ export const NotificationSettings = () => {
               <p className="text-sm text-muted-foreground">
                 {isGranted
                   ? "You'll receive browser notifications"
+                  : !browserPermissionGranted
+                  ? "Browser permission required"
                   : "Enable to get instant alerts"}
               </p>
             </div>
           </div>
-          <Badge variant={isGranted ? "default" : "secondary"}>
-            {isGranted ? "Active" : "Inactive"}
+          <Badge variant={isGranted ? "default" : "secondary"} className={isGranted ? "bg-green-500" : ""}>
+            {isGranted ? "Enabled" : "Disabled"}
           </Badge>
         </div>
 
-        {/* Enable Button */}
-        {!isGranted && (
+        {/* Enable/Disable Button */}
+        {!browserPermissionGranted ? (
           <Button onClick={handleEnableNotifications} className="w-full" size="lg">
             <Bell className="mr-2 h-4 w-4" />
             Enable Notifications
           </Button>
+        ) : (
+          <div className="flex gap-2">
+            {!isGranted ? (
+              <Button onClick={handleEnableNotifications} className="flex-1" size="lg">
+                <Bell className="mr-2 h-4 w-4" />
+                Enable Notifications
+              </Button>
+            ) : (
+              <Button
+                onClick={handleDisableNotifications}
+                variant="outline"
+                className="flex-1"
+                size="lg"
+              >
+                <BellOff className="mr-2 h-4 w-4" />
+                Disable Notifications
+              </Button>
+            )}
+          </div>
         )}
 
         {/* Notification Preferences */}
@@ -110,8 +158,8 @@ export const NotificationSettings = () => {
               </div>
               <Switch
                 id="notify-limit"
-                checked={notifyOnLimit}
-                onCheckedChange={setNotifyOnLimit}
+                checked={preferences?.notify_on_limit ?? true}
+                onCheckedChange={(checked) => updatePreference("notify_on_limit", checked)}
               />
             </div>
 
@@ -124,8 +172,8 @@ export const NotificationSettings = () => {
               </div>
               <Switch
                 id="notify-bedtime"
-                checked={notifyOnBedtime}
-                onCheckedChange={setNotifyOnBedtime}
+                checked={preferences?.notify_on_bedtime ?? true}
+                onCheckedChange={(checked) => updatePreference("notify_on_bedtime", checked)}
               />
             </div>
 
@@ -138,8 +186,8 @@ export const NotificationSettings = () => {
               </div>
               <Switch
                 id="notify-warning"
-                checked={notifyOnWarning}
-                onCheckedChange={setNotifyOnWarning}
+                checked={preferences?.notify_on_warning ?? true}
+                onCheckedChange={(checked) => updatePreference("notify_on_warning", checked)}
               />
             </div>
 
