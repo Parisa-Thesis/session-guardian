@@ -101,11 +101,12 @@ const Sessions = () => {
                   <p className="text-muted-foreground">No completed sessions yet</p>
                 </div>
               ) : (
-                <Table>
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Child</TableHead>
                       <TableHead>Device</TableHead>
+                      <TableHead>Type</TableHead>
                       <TableHead>Start Time</TableHead>
                       <TableHead>End Time</TableHead>
                       <TableHead>Duration</TableHead>
@@ -127,6 +128,14 @@ const Sessions = () => {
                               {session.devices?.device_name || session.devices?.model || "Unknown"}
                             </div>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={session.session_type === "manual" ? "default" : "secondary"}
+                            className="capitalize"
+                          >
+                            {session.session_type || "auto"}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           {format(new Date(session.start_time), "MMM d, HH:mm")}

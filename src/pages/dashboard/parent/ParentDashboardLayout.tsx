@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { useTranslation } from "react-i18next";
+import { QuickSessionControl } from "@/components/dashboard/QuickSessionControl";
 
 const ParentDashboardLayout = () => {
   const { t } = useTranslation();
@@ -42,8 +43,13 @@ const ParentDashboardLayout = () => {
             <Shield className="mr-2 h-6 w-6 text-primary" />
             <span className="text-lg font-bold">{t('parent.screenGuardian')}</span>
           </div>
-          <nav className="space-y-1 p-4">
-            {navItems.map((item) => (
+          
+          {/* Quick Session Control */}
+          <div className="border-b">
+            <QuickSessionControl />
+          </div>
+
+          <nav className="space-y-1 p-4">{navItems.map((item) => (
               <Link key={item.path} to={item.path}>
                 <Button
                   variant={isActive(item.path) ? "secondary" : "ghost"}
