@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, subDays, isWithinInterval } from "date-fns";
+import { formatMinutesToTime, formatHoursToTime } from "@/lib/timeUtils";
 
 const COLORS = {
   phone: "hsl(var(--chart-1))",
@@ -438,7 +439,7 @@ export default function ResearcherAnalytics() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {data.stats.avgScreenTime.toFixed(1)}h
+                {formatHoursToTime(data.stats.avgScreenTime)}
               </div>
               <p className="text-xs text-muted-foreground mt-1">Per day average</p>
             </CardContent>

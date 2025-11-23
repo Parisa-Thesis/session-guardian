@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Clock, BookOpen, Tv, TrendingUp, TrendingDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
+import { formatMinutesToTime, minutesToHours } from "@/lib/timeUtils";
 
 export default function Reports() {
   const { data: weeklyStats, isLoading: isLoadingWeekly } = useWeeklyStats();
@@ -161,7 +162,7 @@ export default function Reports() {
                   <div>
                     <p className="text-sm text-muted-foreground">Total Today</p>
                     <p className="text-2xl font-bold text-foreground">
-                      {((dailyStats?.[dailyStats.length - 1]?.screenTime || 0)).toFixed(1)}h
+                      {formatMinutesToTime(Math.round((dailyStats?.[dailyStats.length - 1]?.screenTime || 0) * 60))}
                     </p>
                   </div>
                 </div>
@@ -181,7 +182,7 @@ export default function Reports() {
                   <div>
                     <p className="text-sm text-muted-foreground">TV</p>
                     <p className="text-2xl font-bold text-foreground">
-                      {((dailyStats?.[dailyStats.length - 1]?.tv || 0)).toFixed(1)}h
+                      {formatMinutesToTime(Math.round((dailyStats?.[dailyStats.length - 1]?.tv || 0) * 60))}
                     </p>
                   </div>
                 </div>
@@ -201,7 +202,7 @@ export default function Reports() {
                   <div>
                     <p className="text-sm text-muted-foreground">Phone</p>
                     <p className="text-2xl font-bold text-foreground">
-                      {((dailyStats?.[dailyStats.length - 1]?.phone || 0)).toFixed(1)}h
+                      {formatMinutesToTime(Math.round((dailyStats?.[dailyStats.length - 1]?.phone || 0) * 60))}
                     </p>
                   </div>
                 </div>
@@ -221,7 +222,7 @@ export default function Reports() {
                   <div>
                     <p className="text-sm text-muted-foreground">Tablet/Laptop</p>
                     <p className="text-2xl font-bold text-foreground">
-                      {(((dailyStats?.[dailyStats.length - 1]?.tablet || 0) + (dailyStats?.[dailyStats.length - 1]?.laptop || 0))).toFixed(1)}h
+                      {formatMinutesToTime(Math.round(((dailyStats?.[dailyStats.length - 1]?.tablet || 0) + (dailyStats?.[dailyStats.length - 1]?.laptop || 0)) * 60))}
                     </p>
                   </div>
                 </div>
@@ -258,8 +259,8 @@ export default function Reports() {
               {((dailyStats?.[dailyStats.length - 1]?.screenTime || 0) > 3) && (
                 <p className="flex items-start gap-2">
                   <span className="text-orange-500">⚠️</span>
-                  <span className="text-foreground">
-                    Today's screen time ({((dailyStats?.[dailyStats.length - 1]?.screenTime || 0)).toFixed(1)}h) is above recommended daily limits.
+                   <span className="text-foreground">
+                    Today's screen time ({formatMinutesToTime(Math.round((dailyStats?.[dailyStats.length - 1]?.screenTime || 0) * 60))}) is above recommended daily limits.
                   </span>
                 </p>
               )}
@@ -287,7 +288,7 @@ export default function Reports() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Total Screen Time</p>
-                    <p className="text-2xl font-bold text-foreground">{totalWeeklyScreenTime.toFixed(1)}h</p>
+                    <p className="text-2xl font-bold text-foreground">{formatMinutesToTime(Math.round(totalWeeklyScreenTime * 60))}</p>
                     <div className="flex items-center gap-1 mt-1">
                       {weeklyTrend.isPositive ? (
                         <TrendingUp className="h-4 w-4 text-destructive" />
@@ -315,7 +316,7 @@ export default function Reports() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Educational</p>
-                    <p className="text-2xl font-bold text-foreground">{totalWeeklyEducational.toFixed(1)}h</p>
+                    <p className="text-2xl font-bold text-foreground">{formatMinutesToTime(Math.round(totalWeeklyEducational * 60))}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {((totalWeeklyEducational / totalWeeklyScreenTime) * 100 || 0).toFixed(0)}% of total
                     </p>
@@ -336,7 +337,7 @@ export default function Reports() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Entertainment</p>
-                    <p className="text-2xl font-bold text-foreground">{totalWeeklyEntertainment.toFixed(1)}h</p>
+                    <p className="text-2xl font-bold text-foreground">{formatMinutesToTime(Math.round(totalWeeklyEntertainment * 60))}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {((totalWeeklyEntertainment / totalWeeklyScreenTime) * 100 || 0).toFixed(0)}% of total
                     </p>
@@ -372,7 +373,7 @@ export default function Reports() {
                 <li className="flex items-start gap-2 text-sm">
                   <span className="text-orange-500">⚠️</span>
                   <span className="text-foreground">
-                    Average daily screen time ({(totalWeeklyScreenTime / 7).toFixed(1)}h) exceeds recommended limits. Consider setting daily time limits.
+                    Average daily screen time ({formatMinutesToTime(Math.round((totalWeeklyScreenTime / 7) * 60))}) exceeds recommended limits. Consider setting daily time limits.
                   </span>
                 </li>
               )}
