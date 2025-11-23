@@ -11,7 +11,11 @@ export const useResearcherData = () => {
       // Get consented children
       const { data: consents } = await supabase
         .from("consents")
-        .select("*, children(*)")
+        .select(`
+          *,
+          children(*),
+          profiles!consents_parent_id_fkey(name, email)
+        `)
         .eq("granted", true);
 
       const consentedChildIds = consents?.map(c => c.child_id) || [];

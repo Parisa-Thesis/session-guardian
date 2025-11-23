@@ -2,8 +2,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useResearcherData } from "@/hooks/useResearcherData";
-import { TrendingUp, Smartphone, Clock, Activity, Calendar, Users2 } from "lucide-react";
+import { TrendingUp, Smartphone, Clock, Activity, Calendar, Users2, Filter } from "lucide-react";
 import { motion } from "framer-motion";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   LineChart,
   Line,
@@ -49,6 +51,10 @@ export default function ResearcherAnalytics() {
     from: subDays(new Date(), 30),
     to: new Date(),
   });
+  const [parentFilter, setParentFilter] = useState<string>("all");
+  const [childFilter, setChildFilter] = useState<string>("");
+  
+  const uniqueParents = Array.from(new Set(data?.consents.map(c => (c.profiles as any)?.email).filter(Boolean))) || [];
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Quick date range shortcuts
@@ -64,13 +70,24 @@ export default function ResearcherAnalytics() {
   const chartData = useMemo(() => {
     if (!data?.activityLogs) return null;
 
-    // Filter by date range
-    const filteredLogs = data.activityLogs.filter((log) =>
-      isWithinInterval(new Date(log.activity_date), {
+    // Filter by date range, parent, and child
+    const filteredLogs = data.activityLogs.filter((log) => {
+      const consent = data.consents.find(c => c.child_id === log.child_id);
+      const parentEmail = (consent?.profiles as any)?.email || "";
+      const childName = (consent?.children as any)?.name || "";
+      const anonymousId = (consent?.children as any)?.anonymous_id || "";
+      
+      const inDateRange = isWithinInterval(new Date(log.activity_date), {
         start: dateRange.from,
         end: dateRange.to,
-      })
-    );
+      });
+      const matchesParent = parentFilter === "all" || parentEmail === parentFilter;
+      const matchesChild = !childFilter || 
+        childName.toLowerCase().includes(childFilter.toLowerCase()) ||
+        anonymousId.toLowerCase().includes(childFilter.toLowerCase());
+      
+      return inDateRange && matchesParent && matchesChild;
+    });
 
     // Device usage distribution
     const deviceUsage = filteredLogs.reduce((acc, log) => {
@@ -226,7 +243,7 @@ export default function ResearcherAnalytics() {
       ageDeviceData,
       totalDataPoints: filteredLogs.length,
     };
-  }, [data, dateRange]);
+  }, [data, dateRange, parentFilter, childFilter]);
 
   if (isLoading) {
     return (
@@ -338,6 +355,34 @@ export default function ResearcherAnalytics() {
         </div>
       </div>
 
+      {/* Participant and Child Filters */}
+      <Card className="p-4">
+        <div className="flex items-center gap-4">
+          <Filter className="h-5 w-5 text-muted-foreground" />
+          <div className="flex-1 flex flex-wrap gap-4">
+            <Select value={parentFilter} onValueChange={setParentFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filter by parent" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Parents</SelectItem>
+                {uniqueParents.map((email) => (
+                  <SelectItem key={email} value={email}>
+                    {email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="Search by child name or ID..."
+              value={childFilter}
+              onChange={(e) => setChildFilter(e.target.value)}
+              className="max-w-xs"
+            />
+          </div>
+        </div>
+      </Card>
+
       {/* Active Filters Display */}
       <Card className="p-4">
         <div className="flex items-center gap-4 text-sm">
@@ -349,6 +394,16 @@ export default function ResearcherAnalytics() {
             <Activity className="h-3 w-3" />
             {chartData?.totalDataPoints || 0} data points
           </Badge>
+          {parentFilter !== "all" && (
+            <Badge variant="outline" className="gap-2">
+              Parent: {parentFilter}
+            </Badge>
+          )}
+          {childFilter && (
+            <Badge variant="outline" className="gap-2">
+              Child: {childFilter}
+            </Badge>
+          )}
         </div>
       </Card>
 

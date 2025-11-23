@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Shield, Send, CheckCircle, Clock, Users } from "lucide-react";
+import { Shield, Send, CheckCircle, Clock, Users, Filter } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import {
   Dialog,
@@ -40,6 +41,8 @@ export default function ConsentRequests() {
     devices: false,
   });
   const [researchPurpose, setResearchPurpose] = useState("");
+  const [parentFilter, setParentFilter] = useState<string>("all");
+  const [childFilter, setChildFilter] = useState<string>("");
 
   // Fetch all parents and their children
   const { data: parents, isLoading: parentsLoading } = useQuery({
@@ -184,8 +187,24 @@ export default function ConsentRequests() {
     );
   }
 
-  const pendingRequests = consents?.filter(c => !c.granted) || [];
-  const grantedRequests = consents?.filter(c => c.granted) || [];
+  const filteredConsents = consents?.filter(consent => {
+    const parentEmail = (consent.profiles as any)?.email || "";
+    const parentName = (consent.profiles as any)?.name || "";
+    const childName = (consent.children as any)?.name || "";
+    const anonymousId = (consent.children as any)?.anonymous_id || "";
+    
+    const matchesParent = parentFilter === "all" || parentEmail === parentFilter;
+    const matchesChild = !childFilter || 
+      childName.toLowerCase().includes(childFilter.toLowerCase()) ||
+      anonymousId.toLowerCase().includes(childFilter.toLowerCase());
+    
+    return matchesParent && matchesChild;
+  }) || [];
+
+  const pendingRequests = filteredConsents.filter(c => !c.granted);
+  const grantedRequests = filteredConsents.filter(c => c.granted);
+  
+  const uniqueParents = Array.from(new Set(consents?.map(c => (c.profiles as any)?.email).filter(Boolean))) || [];
 
   return (
     <div className="space-y-6">
@@ -390,6 +409,35 @@ export default function ConsentRequests() {
         </Dialog>
       </div>
 
+      {consents && consents.length > 0 && (
+        <Card className="p-4">
+          <div className="flex items-center gap-4">
+            <Filter className="h-5 w-5 text-muted-foreground" />
+            <div className="flex-1 flex gap-4">
+              <Select value={parentFilter} onValueChange={setParentFilter}>
+                <SelectTrigger className="w-[250px]">
+                  <SelectValue placeholder="Filter by parent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Parents</SelectItem>
+                  {uniqueParents.map((email) => (
+                    <SelectItem key={email} value={email}>
+                      {email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Search by child name or ID..."
+                value={childFilter}
+                onChange={(e) => setChildFilter(e.target.value)}
+                className="max-w-xs"
+              />
+            </div>
+          </div>
+        </Card>
+      )}
+
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="p-6">
           <div className="flex items-center gap-3">
@@ -483,17 +531,18 @@ export default function ConsentRequests() {
               >
                 <Card className="p-6">
                   <div className="flex items-start justify-between">
-                    <div className="space-y-2">
+                    <div className="space-y-3 flex-1">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-                          Granted
+                          Access Granted
                         </Badge>
                         <span className="text-sm text-muted-foreground">
-                          Granted on {consent.granted_at ? new Date(consent.granted_at).toLocaleDateString() : "N/A"}
+                          Granted: {consent.granted_at ? new Date(consent.granted_at).toLocaleDateString() : "N/A"}
                         </span>
                       </div>
+                      
                       <div>
-                        <p className="font-semibold text-foreground">
+                        <p className="font-semibold text-lg text-foreground">
                           Parent: {(consent.profiles as any)?.name || (consent.profiles as any)?.email}
                         </p>
                         <p className="text-sm text-muted-foreground">
@@ -502,6 +551,64 @@ export default function ConsentRequests() {
                         <p className="text-xs text-muted-foreground mt-1">
                           Anonymous ID: {(consent.children as any)?.anonymous_id}
                         </p>
+                      </div>
+
+                      {consent.research_purpose && (
+                        <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <p className="text-xs font-medium text-blue-900 dark:text-blue-300 mb-1">Research Purpose:</p>
+                          <p className="text-sm text-blue-800 dark:text-blue-200">{consent.research_purpose}</p>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-green-700 dark:text-green-400">Active Data Access:</p>
+                        <div className="space-y-2 pl-2">
+                          {consent.data_scope_summary && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium">Aggregated Statistics</p>
+                                <p className="text-xs text-muted-foreground">Weekly/monthly screen time summaries</p>
+                              </div>
+                            </div>
+                          )}
+                          {consent.data_scope_activity_logs && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium">Daily Activity Logs</p>
+                                <p className="text-xs text-muted-foreground">Daily breakdowns of screen time and activities</p>
+                              </div>
+                            </div>
+                          )}
+                          {consent.data_scope_sessions && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium">Session Details</p>
+                                <p className="text-xs text-muted-foreground">Start/end times, duration of each session</p>
+                              </div>
+                            </div>
+                          )}
+                          {consent.data_scope_location && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium">Location Data</p>
+                                <p className="text-xs text-muted-foreground">Approximate location (city/region from IP address)</p>
+                              </div>
+                            </div>
+                          )}
+                          {consent.data_scope_devices && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium">Device Information</p>
+                                <p className="text-xs text-muted-foreground">Device type, model, operating system</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
