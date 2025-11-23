@@ -14,23 +14,58 @@ export default function ResearcherData() {
   const [deviceFilter, setDeviceFilter] = useState<string>("all");
   const [searchId, setSearchId] = useState<string>("");
   const [parentFilter, setParentFilter] = useState<string>("all");
-  const [childNameFilter, setChildNameFilter] = useState<string>("");
+  const [childFilter, setChildFilter] = useState<string>("all");
 
-  // Fetch device catalog
-  const { data: deviceCatalog } = useQuery({
-    queryKey: ["device-catalog"],
+  // Get unique parents
+  const uniqueParents = Array.from(new Set(data?.consents.map(c => (c.profiles as any)?.email).filter(Boolean))) || [];
+
+  // Get children for selected parent
+  const availableChildren = data?.consents.filter(consent => {
+    if (parentFilter === "all") return true;
+    return (consent.profiles as any)?.email === parentFilter;
+  }) || [];
+
+  // Get devices used by selected child
+  const { data: childDevices } = useQuery({
+    queryKey: ["child-devices", childFilter],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("device_catalog")
-        .select("*")
-        .order("device_type");
+      if (childFilter === "all") return [];
+      
+      const consent = data?.consents.find(c => c.child_id === childFilter);
+      if (!consent) return [];
+
+      const { data: devices, error } = await supabase
+        .from("devices")
+        .select("device_type, device_name")
+        .eq("child_id", childFilter);
       
       if (error) throw error;
-      return data;
+      
+      // Get unique device types
+      const uniqueDevices = Array.from(new Set(devices?.map(d => d.device_type) || []));
+      return uniqueDevices.map(type => {
+        const device = devices?.find(d => d.device_type === type);
+        return {
+          device_type: type,
+          device_name: device?.device_name || type,
+        };
+      });
     },
+    enabled: childFilter !== "all" && !!data,
   });
 
-  const uniqueParents = Array.from(new Set(data?.consents.map(c => (c.profiles as any)?.email).filter(Boolean))) || [];
+  // Reset child filter when parent changes
+  const handleParentChange = (value: string) => {
+    setParentFilter(value);
+    setChildFilter("all");
+    setDeviceFilter("all");
+  };
+
+  // Reset device filter when child changes
+  const handleChildChange = (value: string) => {
+    setChildFilter(value);
+    setDeviceFilter("all");
+  };
 
   if (isLoading) {
     return (
@@ -48,15 +83,14 @@ export default function ResearcherData() {
   const filteredLogs = data?.activityLogs.filter(log => {
     const consent = data?.consents.find(c => c.child_id === log.child_id);
     const anonymousId = (consent?.children as any)?.anonymous_id || "";
-    const childName = (consent?.children as any)?.name || "";
     const parentEmail = (consent?.profiles as any)?.email || "";
     
     const matchesDevice = deviceFilter === "all" || log.device_type === deviceFilter;
     const matchesSearch = !searchId || anonymousId.toLowerCase().includes(searchId.toLowerCase());
     const matchesParent = parentFilter === "all" || parentEmail === parentFilter;
-    const matchesChildName = !childNameFilter || childName.toLowerCase().includes(childNameFilter.toLowerCase());
+    const matchesChild = childFilter === "all" || log.child_id === childFilter;
     
-    return matchesDevice && matchesSearch && matchesParent && matchesChildName;
+    return matchesDevice && matchesSearch && matchesParent && matchesChild;
   }) || [];
 
   return (
@@ -74,15 +108,15 @@ export default function ResearcherData() {
       </div>
 
       {data?.stats.totalChildren !== 0 && (
-        <Card className="p-4">
+        <Card className="p-4 bg-card">
           <div className="flex items-center gap-4">
             <Filter className="h-5 w-5 text-muted-foreground" />
-            <div className="flex-1 flex flex-wrap gap-4">
-              <Select value={parentFilter} onValueChange={setParentFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Filter by parent" />
+            <div className="flex-1 flex flex-wrap gap-3">
+              <Select value={parentFilter} onValueChange={handleParentChange}>
+                <SelectTrigger className="w-[220px] bg-background">
+                  <SelectValue placeholder="Select parent" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover z-50">
                   <SelectItem value="all">All Parents</SelectItem>
                   {uniqueParents.map((email) => (
                     <SelectItem key={email} value={email}>
@@ -91,31 +125,49 @@ export default function ResearcherData() {
                   ))}
                 </SelectContent>
               </Select>
-              <Input
-                placeholder="Search by child name..."
-                value={childNameFilter}
-                onChange={(e) => setChildNameFilter(e.target.value)}
-                className="max-w-[200px]"
-              />
-              <Input
-                placeholder="Search by ID..."
-                value={searchId}
-                onChange={(e) => setSearchId(e.target.value)}
-                className="max-w-[180px]"
-              />
-              <Select value={deviceFilter} onValueChange={setDeviceFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Device type" />
+              
+              <Select 
+                value={childFilter} 
+                onValueChange={handleChildChange}
+                disabled={parentFilter === "all"}
+              >
+                <SelectTrigger className="w-[200px] bg-background">
+                  <SelectValue placeholder={parentFilter === "all" ? "Select parent first" : "Select child"} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="all">All Children</SelectItem>
+                  {availableChildren.map((consent) => (
+                    <SelectItem key={consent.child_id} value={consent.child_id}>
+                      {(consent.children as any)?.name} (ID: {(consent.children as any)?.anonymous_id})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select 
+                value={deviceFilter} 
+                onValueChange={setDeviceFilter}
+                disabled={childFilter === "all"}
+              >
+                <SelectTrigger className="w-[180px] bg-background">
+                  <SelectValue placeholder={childFilter === "all" ? "Select child first" : "Device type"} />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
                   <SelectItem value="all">All Devices</SelectItem>
-                  {deviceCatalog?.map((device) => (
-                    <SelectItem key={device.id} value={device.device_type}>
+                  {childDevices?.map((device) => (
+                    <SelectItem key={device.device_type} value={device.device_type}>
                       {device.device_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              
+              <Input
+                placeholder="Search by Anonymous ID..."
+                value={searchId}
+                onChange={(e) => setSearchId(e.target.value)}
+                className="max-w-[200px] bg-background"
+              />
             </div>
           </div>
         </Card>
