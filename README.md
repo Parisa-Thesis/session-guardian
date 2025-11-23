@@ -1,5 +1,3 @@
-# Welcome to your Lovable project
-
 ## Project info
 
 The only requirement is having Node.js & npm installed.
