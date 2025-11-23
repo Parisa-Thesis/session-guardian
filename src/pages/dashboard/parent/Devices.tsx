@@ -36,7 +36,8 @@ const Devices = () => {
           children (
             id,
             name,
-            parent_id
+            parent_id,
+            display_id
           )
         `)
         .eq("children.parent_id", user.id)
@@ -147,6 +148,22 @@ const Devices = () => {
                     <CardDescription>{device.children?.name}'s device</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    {device.display_id && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Device ID:</span>
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          {device.display_id}
+                        </Badge>
+                      </div>
+                    )}
+                    {device.children?.display_id && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Child ID:</span>
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {device.children.display_id}
+                        </Badge>
+                      </div>
+                    )}
                     {(device.device_name || device.model) && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Model:</span>

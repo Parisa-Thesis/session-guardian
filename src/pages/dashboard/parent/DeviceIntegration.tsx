@@ -145,11 +145,15 @@ const DeviceIntegration = () => {
                             <div className="space-y-1">
                               <p className="text-sm text-muted-foreground">
                                 <span className="font-medium">{t('deviceIntegration.deviceId')}:</span>{" "}
-                                <code className="bg-muted px-1 rounded">{device.id}</code>
+                                <Badge variant="secondary" className="font-mono text-xs">
+                                  {device.display_id || device.id}
+                                </Badge>
                               </p>
                               <p className="text-sm text-muted-foreground">
                                 <span className="font-medium">{t('deviceIntegration.childId')}:</span>{" "}
-                                <code className="bg-muted px-1 rounded">{device.child_id}</code>
+                                <Badge variant="outline" className="font-mono text-xs">
+                                  {child?.display_id || device.child_id}
+                                </Badge>
                               </p>
                             </div>
                             <details className="mt-2">
