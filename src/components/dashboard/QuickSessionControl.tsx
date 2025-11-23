@@ -171,14 +171,16 @@ export function QuickSessionControl() {
       if (error) throw error;
 
       toast.success("Session stopped!");
+      // Refresh both the sidebar and Activity Logs views
       queryClient.invalidateQueries({ queryKey: ["quick-active-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["active-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["completed-sessions"] });
     } catch (error: any) {
       toast.error(error.message || "Failed to stop session");
     } finally {
       setLoading(false);
     }
   };
-
   const hasActiveSessions = activeSessions && activeSessions.length > 0;
 
   return (
