@@ -494,7 +494,7 @@ export default function ResearcherAnalytics() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-full">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="reports">Detailed Reports</TabsTrigger>
           <TabsTrigger value="daily">Daily Details</TabsTrigger>
