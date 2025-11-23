@@ -262,9 +262,125 @@ export default function ConsentRequests() {
                 </div>
               )}
 
+              {selectedChild && (
+                <>
+                  <div className="space-y-3">
+                    <Label>Data Access Requested (Select at least one)</Label>
+                    <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                      <div className="flex items-start space-x-3">
+                        <Checkbox
+                          id="scope-summary"
+                          checked={dataScope.summary}
+                          onCheckedChange={(checked) =>
+                            setDataScope({ ...dataScope, summary: checked as boolean })
+                          }
+                        />
+                        <div className="flex-1">
+                          <label htmlFor="scope-summary" className="text-sm font-medium cursor-pointer">
+                            Aggregated Statistics
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Weekly/monthly summaries of total screen time by device type
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start space-x-3">
+                        <Checkbox
+                          id="scope-logs"
+                          checked={dataScope.activityLogs}
+                          onCheckedChange={(checked) =>
+                            setDataScope({ ...dataScope, activityLogs: checked as boolean })
+                          }
+                        />
+                        <div className="flex-1">
+                          <label htmlFor="scope-logs" className="text-sm font-medium cursor-pointer">
+                            Daily Activity Logs
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Daily screen time breakdowns (educational vs entertainment hours, device types, notes)
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start space-x-3">
+                        <Checkbox
+                          id="scope-sessions"
+                          checked={dataScope.sessions}
+                          onCheckedChange={(checked) =>
+                            setDataScope({ ...dataScope, sessions: checked as boolean })
+                          }
+                        />
+                        <div className="flex-1">
+                          <label htmlFor="scope-sessions" className="text-sm font-medium cursor-pointer">
+                            Session-Level Data
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Individual session details: start/end times, duration, IP address (if location enabled)
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start space-x-3">
+                        <Checkbox
+                          id="scope-location"
+                          checked={dataScope.location}
+                          onCheckedChange={(checked) =>
+                            setDataScope({ ...dataScope, location: checked as boolean })
+                          }
+                        />
+                        <div className="flex-1">
+                          <label htmlFor="scope-location" className="text-sm font-medium cursor-pointer">
+                            Location Data
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Approximate location information (city/region level from IP address)
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start space-x-3">
+                        <Checkbox
+                          id="scope-devices"
+                          checked={dataScope.devices}
+                          onCheckedChange={(checked) =>
+                            setDataScope({ ...dataScope, devices: checked as boolean })
+                          }
+                        />
+                        <div className="flex-1">
+                          <label htmlFor="scope-devices" className="text-sm font-medium cursor-pointer">
+                            Device Information
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Device details: type (phone/tablet/laptop), model, operating system, device name
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <p className="text-xs text-blue-800 dark:text-blue-300">
+                        <strong>Note:</strong> Child's name and anonymous ID will always be shared. Age group is included if provided by parent.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="research-purpose">Research Purpose (Optional)</Label>
+                    <Textarea
+                      id="research-purpose"
+                      placeholder="Briefly describe how you will use this data..."
+                      value={researchPurpose}
+                      onChange={(e) => setResearchPurpose(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                </>
+              )}
+
               <Button
                 onClick={() => requestConsentMutation.mutate()}
-                disabled={!selectedParent || !selectedChild || requestConsentMutation.isPending}
+                disabled={!selectedParent || !selectedChild || !hasAnyDataScope || requestConsentMutation.isPending}
                 className="w-full"
               >
                 {requestConsentMutation.isPending ? "Sending..." : "Send Request"}
