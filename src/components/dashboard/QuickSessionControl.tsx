@@ -185,22 +185,13 @@ export function QuickSessionControl() {
     <>
       <div className="px-3 py-2 space-y-2">
         <Button
-          variant={hasActiveSessions ? "destructive" : "default"}
+          variant="default"
           className="w-full justify-start gap-2"
-          onClick={() => hasActiveSessions ? handleStopSession(activeSessions[0].id) : setShowStartDialog(true)}
+          onClick={() => setShowStartDialog(true)}
           disabled={loading}
         >
-          {hasActiveSessions ? (
-            <>
-              <Square className="h-4 w-4" />
-              <span>Stop Session</span>
-            </>
-          ) : (
-            <>
-              <Play className="h-4 w-4" />
-              <span>Start Session</span>
-            </>
-          )}
+          <Play className="h-4 w-4" />
+          <span>Start Session</span>
         </Button>
 
         {hasActiveSessions && (
@@ -230,6 +221,16 @@ export function QuickSessionControl() {
                       {formatDuration(duration)}
                     </span>
                   </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full gap-2 mt-2"
+                    onClick={() => handleStopSession(session.id)}
+                    disabled={loading}
+                  >
+                    <Square className="h-3 w-3" />
+                    Stop
+                  </Button>
                 </div>
               );
             })}
