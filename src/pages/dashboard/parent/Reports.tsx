@@ -232,25 +232,35 @@ export default function Reports() {
 
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4 text-foreground">Daily Screen Time (Last 7 Days)</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={dailyStats}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="tv" fill="#3b82f6" name="TV" stackId="a" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="phone" fill="#8b5cf6" name="Phone" stackId="a" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="tablet" fill="#f59e0b" name="Tablet" stackId="a" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="laptop" fill="#10b981" name="Laptop" stackId="a" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {!dailyStats || dailyStats.length === 0 ? (
+              <div className="h-[300px] flex items-center justify-center border border-dashed border-border rounded-lg">
+                <div className="text-center text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p className="font-medium">No Data Available</p>
+                  <p className="text-sm mt-1">Start tracking screen time to see daily reports</p>
+                </div>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={dailyStats}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="tv" fill="#3b82f6" name="TV" stackId="a" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="phone" fill="#8b5cf6" name="Phone" stackId="a" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="tablet" fill="#f59e0b" name="Tablet" stackId="a" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="laptop" fill="#10b981" name="Laptop" stackId="a" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </Card>
 
           <Card className="p-6">
@@ -349,21 +359,32 @@ export default function Reports() {
 
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4 text-foreground">Daily Screen Time (Last 7 Days)</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={weeklyStats}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                  }}
-                />
-                <Bar dataKey="screenTime" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {!weeklyStats || weeklyStats.length === 0 ? (
+              <div className="h-[300px] flex items-center justify-center border border-dashed border-border rounded-lg">
+                <div className="text-center text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p className="font-medium">No Data Available</p>
+                  <p className="text-sm mt-1">Start tracking screen time to see weekly reports</p>
+                </div>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={weeklyStats}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="screenTime" fill="hsl(var(--primary))" name="Total Screen Time" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </Card>
 
           <Card className="p-6">
@@ -400,24 +421,34 @@ export default function Reports() {
         <TabsContent value="monthly" className="space-y-6">
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4 text-foreground">Monthly Screen Time Trends</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlyStats}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                  }}
-                />
-                <Legend />
-                <Line type="monotone" dataKey="screenTime" stroke="hsl(var(--primary))" strokeWidth={2} name="Total" />
-                <Line type="monotone" dataKey="educational" stroke="#22c55e" strokeWidth={2} name="Educational" />
-                <Line type="monotone" dataKey="entertainment" stroke="#f97316" strokeWidth={2} name="Entertainment" />
-              </LineChart>
-            </ResponsiveContainer>
+            {!monthlyStats || monthlyStats.length === 0 ? (
+              <div className="h-[300px] flex items-center justify-center border border-dashed border-border rounded-lg">
+                <div className="text-center text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p className="font-medium">No Data Available</p>
+                  <p className="text-sm mt-1">Start tracking screen time to see monthly trends</p>
+                </div>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={monthlyStats}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="screenTime" stroke="hsl(var(--primary))" strokeWidth={2} name="Total" />
+                  <Line type="monotone" dataKey="educational" stroke="#22c55e" strokeWidth={2} name="Educational" />
+                  <Line type="monotone" dataKey="entertainment" stroke="#f97316" strokeWidth={2} name="Entertainment" />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </Card>
 
           <Card className="p-6">
