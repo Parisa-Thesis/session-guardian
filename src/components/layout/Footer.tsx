@@ -26,20 +26,12 @@ export const Footer = () => {
             </p>
           </div>
 
-          {/* Get Started */}
+          {/* Quick Links */}
           <div>
             <h3 className="font-semibold mb-4">{t('footer.getStarted')}</h3>
-            <p className="text-sm text-muted-foreground mb-3">
-              {t('footer.getStartedDesc')}
-            </p>
-            <h4 className="text-sm font-medium mb-2">{t('footer.howToUse')}</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="leading-relaxed">{t('footer.parentGuide')}</li>
-              <li className="leading-relaxed">{t('footer.researcherGuide')}</li>
-            </ul>
             <Link 
               to="/get-started" 
-              className="inline-block mt-3 text-sm text-primary hover:underline font-medium"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors block"
             >
               {t('footer.getStarted')} →
             </Link>
@@ -48,37 +40,20 @@ export const Footer = () => {
           {/* About & Contact */}
           <div>
             <h3 className="font-semibold mb-4">{t('footer.aboutUs')}</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {t('footer.aboutUsDesc')}
-            </p>
             <Link 
               to="/about"
-              className="text-sm text-primary hover:underline font-medium block mb-4"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors block mb-2"
             >
               {t('footer.aboutUs')} →
             </Link>
             
-            <h4 className="font-semibold mb-3 mt-6">{t('footer.contact')}</h4>
+            <h3 className="font-semibold mb-4 mt-6">{t('footer.contact')}</h3>
             <Link 
               to="/contact"
-              className="text-sm text-primary hover:underline font-medium block mb-3"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors block"
             >
               {t('footer.contact')} →
             </Link>
-            <div className="space-y-1 text-xs text-muted-foreground">
-              <a 
-                href="mailto:support@screenguardian.edu" 
-                className="hover:text-foreground block"
-              >
-                {t('footer.contactSupport')}
-              </a>
-              <a 
-                href="mailto:research@screenguardian.edu" 
-                className="hover:text-foreground block"
-              >
-                {t('footer.contactResearchEmail')}
-              </a>
-            </div>
           </div>
 
           {/* Privacy & Legal */}
