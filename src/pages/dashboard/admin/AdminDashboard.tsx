@@ -5,44 +5,56 @@ import { Users, Shield, Settings, Activity, Baby } from "lucide-react";
 import { useAdminData } from "@/hooks/useAdminData";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 
 const AdminDashboard = () => {
   const { data, isLoading, error } = useAdminData();
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="mx-auto max-w-7xl space-y-6">
-          <Skeleton className="h-12 w-96" />
-          <div className="grid gap-6 md:grid-cols-4">
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <div className="flex-1 bg-background p-6">
+          <div className="mx-auto max-w-7xl space-y-6">
+            <Skeleton className="h-12 w-96" />
+            <div className="grid gap-6 md:grid-cols-4">
+              <Skeleton className="h-32" />
+              <Skeleton className="h-32" />
+              <Skeleton className="h-32" />
+              <Skeleton className="h-32" />
+            </div>
+            <Skeleton className="h-96" />
           </div>
-          <Skeleton className="h-96" />
         </div>
+        <Footer />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="mx-auto max-w-7xl">
-          <Card className="p-12 text-center">
-            <Shield className="h-12 w-12 mx-auto mb-4 text-destructive" />
-            <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
-            <p className="text-muted-foreground">You do not have permission to view this page.</p>
-          </Card>
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <div className="flex-1 bg-background p-6">
+          <div className="mx-auto max-w-7xl">
+            <Card className="p-12 text-center">
+              <Shield className="h-12 w-12 mx-auto mb-4 text-destructive" />
+              <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
+              <p className="text-muted-foreground">You do not have permission to view this page.</p>
+            </Card>
+          </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <div className="flex-1 bg-background p-6">
+        <div className="mx-auto max-w-7xl space-y-6">
         <div>
           <h1 className="text-4xl font-bold">Admin Dashboard</h1>
           <p className="text-muted-foreground">System administration and user management</p>
@@ -193,7 +205,9 @@ const AdminDashboard = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };
