@@ -21,6 +21,7 @@ import Reports from "./pages/dashboard/parent/Reports";
 import Consents from "./pages/dashboard/parent/Consents";
 import Sessions from "./pages/dashboard/parent/Sessions";
 import Charts from "./pages/dashboard/parent/Charts";
+import DeviceIntegration from "./pages/dashboard/parent/DeviceIntegration";
 
 import ResearcherDashboardLayout from "./pages/dashboard/researcher/ResearcherDashboardLayout";
 import ResearcherDashboard from "./pages/dashboard/researcher/ResearcherDashboard";
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="consents" element={<Consents />} />
             <Route path="sessions" element={<Sessions />} />
             <Route path="charts" element={<Charts />} />
+            <Route path="device-integration" element={<DeviceIntegration />} />
           </Route>
 
           {/* Researcher Dashboard */}
