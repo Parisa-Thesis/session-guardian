@@ -1,85 +1,96 @@
 import { Shield } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export const Footer = () => {
+  const { t } = useTranslation();
+  const currentYear = new Date().getFullYear();
+
   return (
     <footer className="border-t bg-card">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-12">
         <div className="grid gap-8 md:grid-cols-4">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
+            <Link to="/" className="flex items-center gap-2 mb-4">
               <div className="p-1.5 rounded-lg bg-primary/10">
                 <Shield className="h-5 w-5 text-primary" />
               </div>
-              <span className="text-lg font-bold">Screen Guardian</span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Platform for screen time monitoring and digital wellbeing for families
+              <span className="text-lg font-bold">{t('parent.screenGuardian')}</span>
+            </Link>
+            <p className="text-sm text-muted-foreground mb-2">
+              {t('footer.tagline')}
+            </p>
+            <p className="text-xs text-muted-foreground italic">
+              {t('footer.academicProject')}
             </p>
           </div>
 
-          {/* Product */}
+          {/* Get Started */}
           <div>
-            <h3 className="font-semibold mb-4">Product</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Features
-                </Link>
-              </li>
-              <li>
-                <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Pricing
-                </Link>
-              </li>
-              <li>
-                <Link to="/auth" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Get Started
-                </Link>
-              </li>
+            <h3 className="font-semibold mb-4">{t('footer.getStarted')}</h3>
+            <p className="text-sm text-muted-foreground mb-3">
+              {t('footer.getStartedDesc')}
+            </p>
+            <h4 className="text-sm font-medium mb-2">{t('footer.howToUse')}</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="leading-relaxed">{t('footer.parentGuide')}</li>
+              <li className="leading-relaxed">{t('footer.researcherGuide')}</li>
             </ul>
+            <Link 
+              to="/auth" 
+              className="inline-block mt-3 text-sm text-primary hover:underline font-medium"
+            >
+              {t('footer.getStarted')} →
+            </Link>
           </div>
 
-          {/* Company */}
+          {/* About & Contact */}
           <div>
-            <h3 className="font-semibold mb-4">Company</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Contact
-                </Link>
-              </li>
-              <li>
-                <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Blog
-                </Link>
-              </li>
-            </ul>
+            <h3 className="font-semibold mb-4">{t('footer.aboutUs')}</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {t('footer.aboutUsDesc')}
+            </p>
+            <h4 className="font-semibold mb-3 mt-6">{t('footer.contact')}</h4>
+            <div className="space-y-2 text-sm">
+              <div>
+                <p className="text-muted-foreground">{t('footer.contactEmail')}:</p>
+                <a 
+                  href="mailto:support@screenguardian.edu" 
+                  className="text-primary hover:underline"
+                >
+                  {t('footer.contactSupport')}
+                </a>
+              </div>
+              <div>
+                <p className="text-muted-foreground">{t('footer.contactResearch')}:</p>
+                <a 
+                  href="mailto:research@screenguardian.edu" 
+                  className="text-primary hover:underline"
+                >
+                  {t('footer.contactResearchEmail')}
+                </a>
+              </div>
+            </div>
           </div>
 
-          {/* Legal */}
+          {/* Privacy & Legal */}
           <div>
-            <h3 className="font-semibold mb-4">Legal</h3>
+            <h3 className="font-semibold mb-4">{t('footer.privacy')}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Privacy
+                  {t('footer.privacyPolicy')}
                 </Link>
               </li>
               <li>
                 <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Terms of Service
+                  {t('footer.dataProtection')}
                 </Link>
               </li>
               <li>
                 <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Security
+                  {t('footer.ethicsCompliance')}
                 </Link>
               </li>
             </ul>
@@ -87,7 +98,7 @@ export const Footer = () => {
         </div>
 
         <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Screen Guardian. All rights reserved.</p>
+          <p>© {currentYear} {t('footer.copyright')}</p>
         </div>
       </div>
     </footer>
