@@ -59,6 +59,20 @@ export function AddDeviceDialog({ onDeviceAdded }: AddDeviceDialogProps) {
     enabled: open,
   });
 
+  // Fetch device types from device_catalog
+  const { data: deviceTypes } = useQuery({
+    queryKey: ["device-catalog"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("device_catalog")
+        .select("device_type, device_name")
+        .order("device_type");
+
+      return data || [];
+    },
+    enabled: open,
+  });
+
   const validateForm = () => {
     try {
       deviceSchema.parse(formData);
@@ -159,20 +173,11 @@ export function AddDeviceDialog({ onDeviceAdded }: AddDeviceDialogProps) {
                 <SelectValue placeholder="Select device type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="iPad">iPad</SelectItem>
-                <SelectItem value="iPhone">iPhone</SelectItem>
-                <SelectItem value="MacBook">MacBook</SelectItem>
-                <SelectItem value="iMac">iMac</SelectItem>
-                <SelectItem value="Android Tablet">Android Tablet</SelectItem>
-                <SelectItem value="Android Phone">Android Phone</SelectItem>
-                <SelectItem value="Windows Laptop">Windows Laptop</SelectItem>
-                <SelectItem value="Windows PC">Windows PC</SelectItem>
-                <SelectItem value="Chromebook">Chromebook</SelectItem>
-                <SelectItem value="Smart TV">Smart TV</SelectItem>
-                <SelectItem value="Samsung TV">Samsung TV</SelectItem>
-                <SelectItem value="PlayStation">PlayStation</SelectItem>
-                <SelectItem value="Xbox">Xbox</SelectItem>
-                <SelectItem value="Nintendo Switch">Nintendo Switch</SelectItem>
+                {deviceTypes?.map((device) => (
+                  <SelectItem key={device.device_name} value={device.device_name}>
+                    {device.device_name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             {errors.deviceType && (
