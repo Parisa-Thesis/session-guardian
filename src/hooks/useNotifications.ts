@@ -81,7 +81,9 @@ export const useNotifications = () => {
         return true;
       } else if (permission === "denied") {
         await updatePreferencesMutation.mutateAsync({ browser_enabled: false });
-        toast.error("Notifications blocked. Please enable in browser settings.");
+        toast.error(
+          "Notifications are currently disabled in your browser. You can enable them from this site's notification settings."
+        );
         return false;
       }
     }
