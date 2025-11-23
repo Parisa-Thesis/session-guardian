@@ -192,7 +192,7 @@ export const ManualSessionTimer = ({ children, devices, activeSessions }: Manual
                 <SelectContent>
                   {childDevices.map((device) => (
                     <SelectItem key={device.id} value={device.id}>
-                      {device.device_type} - {device.model || "Unknown"}
+                      {device.device_type} - {device.device_name || device.model || device.device_type}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -246,7 +246,7 @@ export const ManualSessionTimer = ({ children, devices, activeSessions }: Manual
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {device?.device_type} - {device?.model || "Unknown"}
+                      {device?.device_type} - {device?.device_name || device?.model || device?.device_type}
                     </p>
                     <div className="flex items-center gap-2 text-sm">
                       <Clock className={`h-3 w-3 ${isPaused ? '' : 'animate-pulse'}`} />
