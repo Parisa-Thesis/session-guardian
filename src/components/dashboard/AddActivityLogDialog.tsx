@@ -75,6 +75,22 @@ export function AddActivityLogDialog({ onLogAdded }: AddActivityLogDialogProps) 
     enabled: open,
   });
 
+  // Fetch device types from device_catalog
+  const { data: deviceTypes } = useQuery({
+    queryKey: ["device-catalog"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("device_catalog")
+        .select("device_type")
+        .order("device_type");
+
+      // Get unique device types
+      const uniqueTypes = [...new Set(data?.map(d => d.device_type) || [])];
+      return uniqueTypes;
+    },
+    enabled: open,
+  });
+
   const validateForm = () => {
     try {
       const validationData = {
@@ -280,12 +296,11 @@ export function AddActivityLogDialog({ onLogAdded }: AddActivityLogDialogProps) 
                 <SelectValue placeholder="Select device type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Tablet">Tablet</SelectItem>
-                <SelectItem value="Phone">Phone</SelectItem>
-                <SelectItem value="Laptop">Laptop</SelectItem>
-                <SelectItem value="Desktop">Desktop</SelectItem>
-                <SelectItem value="TV">TV</SelectItem>
-                <SelectItem value="Game Console">Game Console</SelectItem>
+                {deviceTypes?.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             {errors.deviceType && (
