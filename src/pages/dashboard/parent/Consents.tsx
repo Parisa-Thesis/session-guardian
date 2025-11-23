@@ -158,36 +158,96 @@ export default function Consents() {
               >
                 <Card className="p-6">
                   <div className="flex items-start justify-between">
-                    <div className="space-y-2">
+                    <div className="space-y-3 flex-1">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/20">
-                          Pending
+                          Pending Review
                         </Badge>
                         <span className="text-sm text-muted-foreground">
-                          {new Date(consent.created_at).toLocaleDateString()}
+                          Requested: {new Date(consent.created_at).toLocaleDateString()}
                         </span>
                       </div>
+                      
                       <div>
-                        <p className="font-semibold text-foreground">
-                          Researcher: {(consent.profiles as any)?.name || (consent.profiles as any)?.email}
+                        <p className="font-semibold text-lg text-foreground">
+                          {(consent.profiles as any)?.name || "Researcher"}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Child: {(consent.children as any)?.name} (ID: {(consent.children as any)?.anonymous_id})
+                          {(consent.profiles as any)?.email}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Data requested: {([
-                            consent.data_scope_summary && "Aggregated stats",
-                            consent.data_scope_activity_logs && "Detailed daily logs",
-                            consent.data_scope_sessions && "Session-level data",
-                            consent.data_scope_location && "Approximate location",
-                            consent.data_scope_devices && "Device information",
-                          ].filter(Boolean) as string[]).join(", ")}
+                      </div>
+
+                      <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                        <p className="text-sm font-medium text-foreground">
+                          Child: {(consent.children as any)?.name}
                         </p>
-                        {consent.research_purpose && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Purpose: {consent.research_purpose}
-                          </p>
-                        )}
+                        <p className="text-xs text-muted-foreground">
+                          Anonymous ID: {(consent.children as any)?.anonymous_id}
+                        </p>
+                      </div>
+
+                      {consent.research_purpose && (
+                        <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <p className="text-xs font-medium text-blue-900 dark:text-blue-300 mb-1">Research Purpose:</p>
+                          <p className="text-sm text-blue-800 dark:text-blue-200">{consent.research_purpose}</p>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-foreground">Data Access Requested:</p>
+                        <div className="space-y-2 pl-2">
+                          {consent.data_scope_summary && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-blue-500 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium">Aggregated Statistics</p>
+                                <p className="text-xs text-muted-foreground">Weekly/monthly screen time summaries</p>
+                              </div>
+                            </div>
+                          )}
+                          {consent.data_scope_activity_logs && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-blue-500 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium">Daily Activity Logs</p>
+                                <p className="text-xs text-muted-foreground">Daily breakdowns of screen time and activities</p>
+                              </div>
+                            </div>
+                          )}
+                          {consent.data_scope_sessions && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-blue-500 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium">Session Details</p>
+                                <p className="text-xs text-muted-foreground">Start/end times, duration of each session</p>
+                              </div>
+                            </div>
+                          )}
+                          {consent.data_scope_location && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-orange-500 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium">Location Data</p>
+                                <p className="text-xs text-muted-foreground">Approximate location (city/region from IP address)</p>
+                              </div>
+                            </div>
+                          )}
+                          {consent.data_scope_devices && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-blue-500 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium">Device Information</p>
+                                <p className="text-xs text-muted-foreground">Device type, model, operating system</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="bg-amber-50 dark:bg-amber-950/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                        <p className="text-xs text-amber-800 dark:text-amber-300">
+                          <strong>Always Shared:</strong> Child's name, anonymous ID, and age group (if provided)
+                        </p>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -223,36 +283,90 @@ export default function Consents() {
               >
                 <Card className="p-6">
                   <div className="flex items-start justify-between">
-                    <div className="space-y-2">
+                    <div className="space-y-3 flex-1">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-                          Granted
+                          Access Granted
                         </Badge>
                         <span className="text-sm text-muted-foreground">
-                          Granted on {consent.granted_at ? new Date(consent.granted_at).toLocaleDateString() : "N/A"}
+                          Granted: {consent.granted_at ? new Date(consent.granted_at).toLocaleDateString() : "N/A"}
                         </span>
                       </div>
+                      
                       <div>
-                        <p className="font-semibold text-foreground">
-                          Researcher: {(consent.profiles as any)?.name || (consent.profiles as any)?.email}
+                        <p className="font-semibold text-lg text-foreground">
+                          {(consent.profiles as any)?.name || "Researcher"}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Child: {(consent.children as any)?.name} (ID: {(consent.children as any)?.anonymous_id})
+                          {(consent.profiles as any)?.email}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Data granted: {([
-                            consent.data_scope_summary && "Aggregated stats",
-                            consent.data_scope_activity_logs && "Detailed daily logs",
-                            consent.data_scope_sessions && "Session-level data",
-                            consent.data_scope_location && "Approximate location",
-                            consent.data_scope_devices && "Device information",
-                          ].filter(Boolean) as string[]).join(", ")}
+                      </div>
+
+                      <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                        <p className="text-sm font-medium text-foreground">
+                          Child: {(consent.children as any)?.name}
                         </p>
-                        {consent.research_purpose && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Purpose: {consent.research_purpose}
-                          </p>
-                        )}
+                        <p className="text-xs text-muted-foreground">
+                          Anonymous ID: {(consent.children as any)?.anonymous_id}
+                        </p>
+                      </div>
+
+                      {consent.research_purpose && (
+                        <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <p className="text-xs font-medium text-blue-900 dark:text-blue-300 mb-1">Research Purpose:</p>
+                          <p className="text-sm text-blue-800 dark:text-blue-200">{consent.research_purpose}</p>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-green-700 dark:text-green-400">Active Data Access:</p>
+                        <div className="space-y-2 pl-2">
+                          {consent.data_scope_summary && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium">Aggregated Statistics</p>
+                                <p className="text-xs text-muted-foreground">Weekly/monthly screen time summaries</p>
+                              </div>
+                            </div>
+                          )}
+                          {consent.data_scope_activity_logs && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium">Daily Activity Logs</p>
+                                <p className="text-xs text-muted-foreground">Daily breakdowns of screen time and activities</p>
+                              </div>
+                            </div>
+                          )}
+                          {consent.data_scope_sessions && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium">Session Details</p>
+                                <p className="text-xs text-muted-foreground">Start/end times, duration of each session</p>
+                              </div>
+                            </div>
+                          )}
+                          {consent.data_scope_location && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium">Location Data</p>
+                                <p className="text-xs text-muted-foreground">Approximate location (city/region from IP address)</p>
+                              </div>
+                            </div>
+                          )}
+                          {consent.data_scope_devices && (
+                            <div className="flex items-start gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium">Device Information</p>
+                                <p className="text-xs text-muted-foreground">Device type, model, operating system</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <Button
