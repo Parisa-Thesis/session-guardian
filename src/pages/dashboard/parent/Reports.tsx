@@ -5,30 +5,32 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { subMonths, subDays, format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
-import { Clock, BookOpen, Tv, TrendingUp, TrendingDown } from "lucide-react";
+import { Clock, BookOpen, Tv, TrendingUp, TrendingDown, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { formatMinutesToTime, minutesToHours } from "@/lib/timeUtils";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { useState } from "react";
 
 export default function Reports() {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { data: weeklyStats, isLoading: isLoadingWeekly } = useWeeklyStats();
 
-  // Fetch daily stats
+  // Fetch daily stats for selected date
   const { data: dailyStats, isLoading: isLoadingDaily } = useQuery({
-    queryKey: ["daily-stats"],
+    queryKey: ["daily-stats", format(selectedDate, "yyyy-MM-dd")],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-
-      const today = new Date();
-      const sevenDaysAgo = subDays(today, 7);
 
       const { data: children } = await supabase
         .from("children")
         .select("id")
         .eq("parent_id", user.id);
 
-      if (!children || children.length === 0) return [];
+      if (!children || children.length === 0) return null;
 
       const childIds = children.map(c => c.id);
 
@@ -36,38 +38,28 @@ export default function Reports() {
         .from("child_daily_aggregate")
         .select("*")
         .in("child_id", childIds)
-        .gte("activity_date", format(sevenDaysAgo, "yyyy-MM-dd"))
-        .lte("activity_date", format(today, "yyyy-MM-dd"))
-        .order("activity_date");
+        .eq("activity_date", format(selectedDate, "yyyy-MM-dd"));
 
-      const dailyData: Record<string, any> = (aggregates || []).reduce((acc: any, agg: any) => {
-        const date = format(new Date(agg.activity_date), "MMM dd");
-        if (!acc[date]) {
-          acc[date] = {
-            date,
-            screenTime: 0,
-            tv: 0,
-            phone: 0,
-            tablet: 0,
-            laptop: 0,
-          };
-        }
-        acc[date].screenTime += (agg.total_minutes || 0) / 60;
-        acc[date].tv += (agg.tv_minutes || 0) / 60;
-        acc[date].phone += (agg.phone_minutes || 0) / 60;
-        acc[date].tablet += (agg.tablet_minutes || 0) / 60;
-        acc[date].laptop += (agg.laptop_minutes || 0) / 60;
-        return acc;
-      }, {});
+      if (!aggregates || aggregates.length === 0) return null;
 
-      return Object.values(dailyData) as Array<{
-        date: string;
-        screenTime: number;
-        tv: number;
-        phone: number;
-        tablet: number;
-        laptop: number;
-      }>;
+      // Aggregate all children's data for the selected day
+      const dayData = aggregates.reduce((acc: any, agg: any) => {
+        return {
+          screenTime: acc.screenTime + ((agg.total_minutes || 0) / 60),
+          tv: acc.tv + ((agg.tv_minutes || 0) / 60),
+          phone: acc.phone + ((agg.phone_minutes || 0) / 60),
+          tablet: acc.tablet + ((agg.tablet_minutes || 0) / 60),
+          laptop: acc.laptop + ((agg.laptop_minutes || 0) / 60),
+        };
+      }, {
+        screenTime: 0,
+        tv: 0,
+        phone: 0,
+        tablet: 0,
+        laptop: 0,
+      });
+
+      return dayData;
     },
   });
 
@@ -148,6 +140,30 @@ export default function Reports() {
         </TabsList>
 
         <TabsContent value="daily" className="space-y-6">
+          {/* Date Picker */}
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Select Date</h3>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Calendar className="h-4 w-4" />
+                    {format(selectedDate, "MMMM d, yyyy")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-card z-50" align="end">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </Card>
+
           <div className="grid gap-4 md:grid-cols-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -160,9 +176,9 @@ export default function Reports() {
                     <Clock className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Today</p>
+                    <p className="text-sm text-muted-foreground">Total Screen Time</p>
                     <p className="text-2xl font-bold text-foreground">
-                      {formatMinutesToTime(Math.round((dailyStats?.[dailyStats.length - 1]?.screenTime || 0) * 60))}
+                      {formatMinutesToTime(Math.round((dailyStats?.screenTime || 0) * 60))}
                     </p>
                   </div>
                 </div>
@@ -182,7 +198,7 @@ export default function Reports() {
                   <div>
                     <p className="text-sm text-muted-foreground">TV</p>
                     <p className="text-2xl font-bold text-foreground">
-                      {formatMinutesToTime(Math.round((dailyStats?.[dailyStats.length - 1]?.tv || 0) * 60))}
+                      {formatMinutesToTime(Math.round((dailyStats?.tv || 0) * 60))}
                     </p>
                   </div>
                 </div>
@@ -202,7 +218,7 @@ export default function Reports() {
                   <div>
                     <p className="text-sm text-muted-foreground">Phone</p>
                     <p className="text-2xl font-bold text-foreground">
-                      {formatMinutesToTime(Math.round((dailyStats?.[dailyStats.length - 1]?.phone || 0) * 60))}
+                      {formatMinutesToTime(Math.round((dailyStats?.phone || 0) * 60))}
                     </p>
                   </div>
                 </div>
@@ -222,7 +238,7 @@ export default function Reports() {
                   <div>
                     <p className="text-sm text-muted-foreground">Tablet/Laptop</p>
                     <p className="text-2xl font-bold text-foreground">
-                      {formatMinutesToTime(Math.round(((dailyStats?.[dailyStats.length - 1]?.tablet || 0) + (dailyStats?.[dailyStats.length - 1]?.laptop || 0)) * 60))}
+                      {formatMinutesToTime(Math.round(((dailyStats?.tablet || 0) + (dailyStats?.laptop || 0)) * 60))}
                     </p>
                   </div>
                 </div>
@@ -231,20 +247,27 @@ export default function Reports() {
           </div>
 
           <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4 text-foreground">Daily Screen Time (Last 7 Days)</h3>
-            {!dailyStats || dailyStats.length === 0 ? (
+            <h3 className="text-lg font-semibold mb-4 text-foreground">
+              Screen Time Breakdown - {format(selectedDate, "MMMM d, yyyy")}
+            </h3>
+            {!dailyStats ? (
               <div className="h-[300px] flex items-center justify-center border border-dashed border-border rounded-lg">
                 <div className="text-center text-muted-foreground">
                   <Clock className="h-12 w-12 mx-auto mb-3 opacity-20" />
                   <p className="font-medium">No Data Available</p>
-                  <p className="text-sm mt-1">Start tracking screen time to see daily reports</p>
+                  <p className="text-sm mt-1">No screen time recorded for {format(selectedDate, "MMMM d, yyyy")}</p>
                 </div>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dailyStats}>
+                <BarChart data={[
+                  { device: 'TV', hours: dailyStats.tv },
+                  { device: 'Phone', hours: dailyStats.phone },
+                  { device: 'Tablet', hours: dailyStats.tablet },
+                  { device: 'Laptop', hours: dailyStats.laptop },
+                ]}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                  <XAxis dataKey="device" stroke="hsl(var(--muted-foreground))" />
                   <YAxis stroke="hsl(var(--muted-foreground))" label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
                   <Tooltip
                     contentStyle={{
@@ -252,12 +275,9 @@ export default function Reports() {
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "8px",
                     }}
+                    formatter={(value: number) => `${value.toFixed(2)} hours`}
                   />
-                  <Legend />
-                  <Bar dataKey="tv" fill="#3b82f6" name="TV" stackId="a" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="phone" fill="#8b5cf6" name="Phone" stackId="a" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="tablet" fill="#f59e0b" name="Tablet" stackId="a" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="laptop" fill="#10b981" name="Laptop" stackId="a" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -266,20 +286,42 @@ export default function Reports() {
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4 text-foreground">Daily Insights</h3>
             <div className="space-y-3 text-sm">
-              {((dailyStats?.[dailyStats.length - 1]?.screenTime || 0) > 3) && (
+              {dailyStats && dailyStats.screenTime > 3 && (
                 <p className="flex items-start gap-2">
                   <span className="text-orange-500">⚠️</span>
                    <span className="text-foreground">
-                    Today's screen time ({formatMinutesToTime(Math.round((dailyStats?.[dailyStats.length - 1]?.screenTime || 0) * 60))}) is above recommended daily limits.
+                    Screen time on {format(selectedDate, "MMMM d")} ({formatMinutesToTime(Math.round(dailyStats.screenTime * 60))}) is above recommended daily limits.
                   </span>
                 </p>
               )}
-              <p className="flex items-start gap-2">
-                <span className="text-blue-500">💡</span>
-                <span className="text-foreground">
-                  Track device usage patterns to understand which devices your children use most.
-                </span>
-              </p>
+              {dailyStats && dailyStats.screenTime <= 2 && (
+                <p className="flex items-start gap-2">
+                  <span className="text-green-500">✅</span>
+                  <span className="text-foreground">
+                    Great! Screen time is within healthy limits for {format(selectedDate, "MMMM d")}.
+                  </span>
+                </p>
+              )}
+              {!dailyStats && (
+                <p className="flex items-start gap-2">
+                  <span className="text-blue-500">💡</span>
+                  <span className="text-foreground">
+                    No data recorded for this date. Select a different date or start tracking screen time.
+                  </span>
+                </p>
+              )}
+              {dailyStats && (
+                <p className="flex items-start gap-2">
+                  <span className="text-blue-500">📊</span>
+                  <span className="text-foreground">
+                    Most used device: {
+                      dailyStats.tv >= Math.max(dailyStats.phone, dailyStats.tablet, dailyStats.laptop) ? 'TV' :
+                      dailyStats.phone >= Math.max(dailyStats.tv, dailyStats.tablet, dailyStats.laptop) ? 'Phone' :
+                      dailyStats.tablet >= Math.max(dailyStats.tv, dailyStats.phone, dailyStats.laptop) ? 'Tablet' : 'Laptop'
+                    }
+                  </span>
+                </p>
+              )}
             </div>
           </Card>
         </TabsContent>
