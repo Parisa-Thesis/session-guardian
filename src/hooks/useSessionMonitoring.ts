@@ -7,6 +7,7 @@ import { useEffect, useRef } from "react";
 export const useSessionMonitoring = () => {
   const { sendNotification, isGranted } = useNotifications();
   const notifiedWarnings = useRef<Set<string>>(new Set());
+  const notifiedSessions = useRef<Set<string>>(new Set());
 
   const queryResult = useQuery({
     queryKey: ["session-monitoring"],
@@ -115,6 +116,32 @@ export const useSessionMonitoring = () => {
     },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+
+  // Send notification when new sessions start
+  useEffect(() => {
+    if (!queryResult.data || !isGranted) return;
+
+    queryResult.data.sessions.forEach((session: any) => {
+      const sessionKey = session.id;
+      
+      // Only notify once per session when it starts
+      if (notifiedSessions.current.has(sessionKey)) return;
+
+      notifiedSessions.current.add(sessionKey);
+
+      // Notify about session start
+      sendNotification(`📱 ${session.children.name}`, {
+        body: `زمان استفاده از صفحه نمایش در حال ثبت است`,
+        tag: `session-${sessionKey}`,
+        icon: "/favicon.ico",
+      });
+
+      // Clear the notification from the set after 1 hour (in case session ends)
+      setTimeout(() => {
+        notifiedSessions.current.delete(sessionKey);
+      }, 3600000);
+    });
+  }, [queryResult.data?.sessions, isGranted, sendNotification]);
 
   // Send notifications for warnings
   useEffect(() => {
