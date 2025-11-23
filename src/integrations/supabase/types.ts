@@ -337,6 +337,39 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          browser_enabled: boolean
+          created_at: string
+          id: string
+          notify_on_bedtime: boolean
+          notify_on_limit: boolean
+          notify_on_warning: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          browser_enabled?: boolean
+          created_at?: string
+          id?: string
+          notify_on_bedtime?: boolean
+          notify_on_limit?: boolean
+          notify_on_warning?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          browser_enabled?: boolean
+          created_at?: string
+          id?: string
+          notify_on_bedtime?: boolean
+          notify_on_limit?: boolean
+          notify_on_warning?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       parental_checks: {
         Row: {
           answer: string
