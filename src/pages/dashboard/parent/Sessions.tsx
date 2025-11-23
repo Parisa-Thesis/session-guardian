@@ -109,6 +109,8 @@ const Sessions = () => {
                       <TableHead>Start Time</TableHead>
                       <TableHead>End Time</TableHead>
                       <TableHead>Duration</TableHead>
+                      <TableHead>IP Address</TableHead>
+                      <TableHead>Location</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -119,7 +121,12 @@ const Sessions = () => {
                           {session.children?.name}
                         </TableCell>
                         <TableCell>
-                          {session.devices?.device_type} - {session.devices?.model || "Unknown"}
+                          <div className="space-y-1">
+                            <div>{session.devices?.device_type}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {session.devices?.device_name || session.devices?.model || "Unknown"}
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell>
                           {format(new Date(session.start_time), "MMM d, HH:mm")}
@@ -133,6 +140,16 @@ const Sessions = () => {
                           {session.end_time
                             ? formatDuration(session.duration_minutes)
                             : calculateActiveDuration(session.start_time)}
+                        </TableCell>
+                        <TableCell>
+                          {session.ip_address ? (
+                            <code className="text-xs bg-muted px-2 py-1 rounded">{session.ip_address}</code>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {session.location || <span className="text-muted-foreground text-xs">—</span>}
                         </TableCell>
                         <TableCell>
                           <Badge variant={session.end_time ? "secondary" : "default"}>

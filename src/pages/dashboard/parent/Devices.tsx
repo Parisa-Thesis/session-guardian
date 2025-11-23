@@ -147,10 +147,10 @@ const Devices = () => {
                     <CardDescription>{device.children?.name}'s device</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {device.model && (
+                    {(device.device_name || device.model) && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Model:</span>
-                        <span className="font-medium">{device.model}</span>
+                        <span className="font-medium">{device.device_name || device.model}</span>
                       </div>
                     )}
                     {device.os && (
@@ -159,6 +159,18 @@ const Devices = () => {
                         <Badge variant="secondary" className="font-normal">
                           {device.os}
                         </Badge>
+                      </div>
+                    )}
+                    {device.ip_address && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">IP:</span>
+                        <code className="text-xs bg-muted px-2 py-1 rounded">{device.ip_address}</code>
+                      </div>
+                    )}
+                    {device.last_used_at && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Last Used:</span>
+                        <span className="text-xs">{new Date(device.last_used_at).toLocaleString()}</span>
                       </div>
                     )}
                     <div className="pt-2 border-t">
