@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Smartphone, Copy, Check, ExternalLink } from "lucide-react";
+import { Smartphone, Copy, Check, ExternalLink, Tablet, Clock, Info, AlertCircle, CheckCircle, Code } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useParentData } from "@/hooks/useParentData";
@@ -201,67 +201,247 @@ const DeviceIntegration = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="guide" className="space-y-4">
+        <TabsContent value="guide" className="space-y-6">
+          <Alert>
+            <Smartphone className="h-4 w-4" />
+            <AlertTitle>ردیابی خودکار زمان استفاده از صفحه نمایش</AlertTitle>
+            <AlertDescription>
+              وقتی فرزند شما تبلت را روشن می‌کند، به صورت خودکار زمان استفاده ثبت می‌شود - حتی بدون باز کردن این برنامه
+            </AlertDescription>
+          </Alert>
+
+          {/* iOS Setup */}
           <Card>
             <CardHeader>
-              <CardTitle>Integration Guide</CardTitle>
-              <CardDescription>How to set up automatic session tracking</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Smartphone className="h-5 w-5" />
+                راه‌اندازی iOS (آیفون/آیپد)
+              </CardTitle>
+              <CardDescription>
+                استفاده از Shortcuts برای ردیابی خودکار
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold">1. For iOS/iPadOS Devices</h3>
+            <CardContent className="space-y-4">
+              <Alert className="bg-primary/5 border-primary/20">
+                <AlertCircle className="h-4 w-4 text-primary" />
+                <AlertTitle>چگونه کار می‌کند؟</AlertTitle>
+                <AlertDescription>
+                  وقتی فرزندتان تبلت را روشن می‌کند یا هر برنامه‌ای را باز می‌کند، به صورت خودکار یک پیام به سیستم ما ارسال می‌شود و زمان استفاده شروع می‌شود. شما به صورت لحظه‌ای اطلاع‌رسانی دریافت می‌کنید.
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">مرحله 1: نصب Shortcuts</h4>
                 <p className="text-sm text-muted-foreground">
-                  Use iOS Shortcuts with Screen Time API to automatically send webhook requests when
-                  the device is unlocked/locked.
+                  برنامه Shortcuts را روی دستگاه iOS فرزندتان باز کنید (از iOS 13 به بعد نصب شده است)
                 </p>
-                <Button variant="outline" className="gap-2">
-                  <ExternalLink className="h-4 w-4" />
-                  Download iOS Shortcut Template
-                </Button>
               </div>
 
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold">2. For Android Devices</h3>
-                <p className="text-sm text-muted-foreground">
-                  Use Tasker or similar automation apps to trigger webhook calls on device
-                  unlock/lock events.
-                </p>
-                <Button variant="outline" className="gap-2">
-                  <ExternalLink className="h-4 w-4" />
-                  Download Tasker Configuration
-                </Button>
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold">3. Custom Integration</h3>
-                <p className="text-sm text-muted-foreground">
-                  Build your own app or integration using the webhook API. Send POST requests to the
-                  endpoint with device and child IDs.
-                </p>
-                <div className="p-4 bg-muted rounded-lg space-y-2">
-                  <p className="text-sm font-medium">Example cURL command:</p>
+              <div className="space-y-2">
+                <h4 className="font-medium">مرحله 2: ایجاد اتوماسیون شروع</h4>
+                <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-2">
+                  <li>به تب Automation بروید → Create Personal Automation</li>
+                  <li>گزینه "Time of Day" را انتخاب کنید</li>
+                  <li>زمان را روی هر 5 دقیقه تنظیم کنید (برای ردیابی مداوم)</li>
+                  <li>یا گزینه "App" → "Is Opened" → "Any App" را انتخاب کنید</li>
+                  <li>Action اضافه کنید: "Get Contents of URL"</li>
+                  <li>URL را تنظیم کنید: <code className="text-xs bg-muted px-2 py-1 rounded block mt-1">{webhookUrl}</code></li>
+                  <li>Method را روی POST تنظیم کنید</li>
+                  <li>Request Body را از پایین کپی کنید</li>
+                </ol>
+                <div className="mt-2 p-3 bg-muted rounded-lg">
+                  <p className="text-xs font-medium mb-2">Request Body (برای شروع):</p>
                   <pre className="text-xs overflow-x-auto">
-                    {`curl -X POST ${webhookUrl} \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "action": "start",
-    "device_id": "YOUR_DEVICE_ID",
-    "child_id": "YOUR_CHILD_ID"
-  }'`}
+{`{
+  "action": "start",
+  "device_id": "DEVICE_ID_HERE",
+  "child_id": "CHILD_ID_HERE"
+}`}
                   </pre>
                 </div>
               </div>
 
-              <Alert>
-                <Smartphone className="h-4 w-4" />
-                <AlertTitle>Need Help?</AlertTitle>
+              <div className="space-y-2">
+                <h4 className="font-medium">مرحله 3: ایجاد اتوماسیون توقف</h4>
+                <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-2">
+                  <li>یک automation دیگر بسازید با "App" → "Is Closed"</li>
+                  <li>یا "Screen locks" (وقتی صفحه قفل می‌شود)</li>
+                  <li>از همان URL استفاده کنید با action "stop"</li>
+                </ol>
+              </div>
+
+              <Alert className="bg-green-500/10 border-green-500/20">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertTitle>نتیجه</AlertTitle>
                 <AlertDescription>
-                  Contact support for assistance with device integration and custom setup
-                  requirements.
+                  حالا هر بار که فرزندتان دستگاه را استفاده کند، شما فوراً اطلاع‌رسانی دریافت می‌کنید: "فعالیت صفحه نمایش [نام فرزند] در حال ثبت است"
                 </AlertDescription>
               </Alert>
             </CardContent>
           </Card>
+
+          {/* Android Setup */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Tablet className="h-5 w-5" />
+                راه‌اندازی اندروید
+              </CardTitle>
+              <CardDescription>
+                استفاده از Tasker برای ردیابی خودکار
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert className="bg-primary/5 border-primary/20">
+                <AlertCircle className="h-4 w-4 text-primary" />
+                <AlertTitle>چگونه کار می‌کند؟</AlertTitle>
+                <AlertDescription>
+                  با Tasker می‌توانید تبلت اندروید را طوری تنظیم کنید که وقتی صفحه روشن می‌شود، به صورت خودکار به سیستم ما اطلاع دهد و زمان استفاده را ثبت کند.
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">مرحله 1: نصب Tasker</h4>
+                <p className="text-sm text-muted-foreground">
+                  Tasker را از Google Play Store دانلود کنید (برنامه پولی، حدود $3.49)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">مرحله 2: ایجاد Profile برای روشن شدن صفحه</h4>
+                <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-2">
+                  <li>Profile جدید بسازید → Event → Display → Display On</li>
+                  <li>Task جدید بسازید → Net → HTTP Request</li>
+                  <li>URL را روی webhook URL بالا تنظیم کنید</li>
+                  <li>Method: POST</li>
+                  <li>Body را از پایین کپی کنید</li>
+                </ol>
+                <div className="mt-2 p-3 bg-muted rounded-lg">
+                  <p className="text-xs font-medium mb-2">Request Body:</p>
+                  <pre className="text-xs overflow-x-auto">
+{`{
+  "action": "start",
+  "device_id": "DEVICE_ID_HERE",
+  "child_id": "CHILD_ID_HERE"
+}`}
+                  </pre>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">مرحله 3: ایجاد Profile برای خاموش شدن صفحه</h4>
+                <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-2">
+                  <li>Profile → Event → Display → Display Off</li>
+                  <li>Task با HTTP Request با action "stop"</li>
+                </ol>
+              </div>
+
+              <Alert className="bg-green-500/10 border-green-500/20">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertTitle>نتیجه</AlertTitle>
+                <AlertDescription>
+                  حالا هر بار که تبلت روشن یا خاموش می‌شود، به صورت خودکار به شما اطلاع داده می‌شود و زمان دقیق استفاده ثبت می‌شود.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+
+          {/* Alternative: Screen Time Apps */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                راه حل آسان‌تر: اپلیکیشن‌های Screen Time
+              </CardTitle>
+              <CardDescription>
+                استفاده از اپلیکیشن‌های آماده برای ردیابی خودکار
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                اگر راه‌اندازی دستی پیچیده است، می‌توانید از اپلیکیشن‌های آماده استفاده کنید که با API ما کار می‌کنند:
+              </p>
+              
+              <div className="space-y-3">
+                <div className="p-3 bg-muted rounded-lg">
+                  <h4 className="font-medium mb-1">برای iOS</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Screen Time (داخلی iOS) + Shortcuts</li>
+                    <li>• OurPact - ردیابی و کنترل والدین</li>
+                    <li>• Qustodio - پلتفرم کامل والدین</li>
+                  </ul>
+                </div>
+
+                <div className="p-3 bg-muted rounded-lg">
+                  <h4 className="font-medium mb-1">برای اندروید</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Digital Wellbeing (داخلی Android)</li>
+                    <li>• Family Link - برنامه رسمی Google</li>
+                    <li>• Kids Place - قفل والدین</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* How It Works */}
+          <Card className="border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Info className="h-5 w-5" />
+                چطور کار می‌کند؟
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-bold text-primary">1</span>
+                </div>
+                <div>
+                  <p className="font-medium">فرزند تبلت را روشن می‌کند</p>
+                  <p className="text-sm text-muted-foreground">صفحه دستگاه روشن می‌شود</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-bold text-primary">2</span>
+                </div>
+                <div>
+                  <p className="font-medium">ارسال خودکار به سیستم</p>
+                  <p className="text-sm text-muted-foreground">دستگاه به صورت خودکار به API ما اطلاع می‌دهد</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-bold text-primary">3</span>
+                </div>
+                <div>
+                  <p className="font-medium">شروع ثبت زمان</p>
+                  <p className="text-sm text-muted-foreground">تایمر شروع می‌شود و در دیتابیس ذخیره می‌شود</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-bold text-primary">4</span>
+                </div>
+                <div>
+                  <p className="font-medium">اطلاع‌رسانی فوری به شما</p>
+                  <p className="text-sm text-muted-foreground">نوتیفیکیشن دریافت می‌کنید: "فعالیت صفحه نمایش [نام] در حال ثبت است ⏱️"</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>نیاز به کمک دارید؟</AlertTitle>
+            <AlertDescription>
+              اگر در راه‌اندازی ردیابی خودکار به کمک نیاز دارید، لطفاً با پشتیبانی تماس بگیرید.
+            </AlertDescription>
+          </Alert>
         </TabsContent>
       </Tabs>
     </div>
