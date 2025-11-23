@@ -24,6 +24,9 @@ import Charts from "./pages/dashboard/parent/Charts";
 
 import ResearcherDashboardLayout from "./pages/dashboard/researcher/ResearcherDashboardLayout";
 import ResearcherDashboard from "./pages/dashboard/researcher/ResearcherDashboard";
+import ResearcherData from "./pages/dashboard/researcher/Data";
+import ResearcherAnalytics from "./pages/dashboard/researcher/Analytics";
+import ResearcherParticipants from "./pages/dashboard/researcher/Participants";
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -83,6 +86,9 @@ const App = () => (
             }
           >
             <Route index element={<ResearcherDashboard />} />
+            <Route path="data" element={<ResearcherData />} />
+            <Route path="analytics" element={<ResearcherAnalytics />} />
+            <Route path="participants" element={<ResearcherParticipants />} />
           </Route>
 
           {/* Admin Dashboard */}
