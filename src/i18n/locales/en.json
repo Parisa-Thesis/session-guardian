@@ -31,6 +31,27 @@
     "profile": "Profile",
     "settings": "Settings"
   },
+  "footer": {
+    "tagline": "Academic research platform for screen time monitoring and digital wellbeing studies",
+    "getStarted": "Get Started",
+    "getStartedDesc": "Register as a parent to monitor your child's screen time, or as a researcher to access anonymized data for academic studies.",
+    "howToUse": "How to Use",
+    "parentGuide": "Parents can create profiles for their children, set time limits, and track device usage.",
+    "researcherGuide": "Researchers can request access to anonymized data for academic studies with proper ethical approval.",
+    "aboutUs": "About Us",
+    "aboutUsDesc": "Screen Guardian is an academic research project designed to help families manage screen time while contributing to research on digital wellbeing.",
+    "contact": "Contact",
+    "contactEmail": "Email",
+    "contactSupport": "support@screenguardian.edu",
+    "contactResearch": "Research Inquiries",
+    "contactResearchEmail": "research@screenguardian.edu",
+    "privacy": "Privacy",
+    "privacyPolicy": "Privacy Policy",
+    "dataProtection": "Data Protection",
+    "ethicsCompliance": "Ethics Compliance",
+    "copyright": "Screen Guardian. All rights reserved.",
+    "academicProject": "Academic Research Project"
+  },
   "roles": {
     "parent": "Parent",
     "researcher": "Researcher",
