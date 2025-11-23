@@ -6,11 +6,27 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ResearcherData() {
   const { data, isLoading } = useResearcherData();
   const [deviceFilter, setDeviceFilter] = useState<string>("all");
   const [searchId, setSearchId] = useState<string>("");
+
+  // Fetch device catalog
+  const { data: deviceCatalog } = useQuery({
+    queryKey: ["device-catalog"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("device_catalog")
+        .select("*")
+        .order("device_type");
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
   if (isLoading) {
     return (
@@ -61,15 +77,16 @@ export default function ResearcherData() {
                 className="max-w-xs"
               />
               <Select value={deviceFilter} onValueChange={setDeviceFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Filter by device" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Devices</SelectItem>
-                  <SelectItem value="phone">Phone</SelectItem>
-                  <SelectItem value="tablet">Tablet</SelectItem>
-                  <SelectItem value="laptop">Laptop</SelectItem>
-                  <SelectItem value="tv">TV</SelectItem>
+                  {deviceCatalog?.map((device) => (
+                    <SelectItem key={device.id} value={device.device_type}>
+                      {device.device_name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
