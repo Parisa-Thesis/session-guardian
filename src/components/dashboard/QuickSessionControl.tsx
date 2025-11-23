@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { differenceInSeconds } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ export function QuickSessionControl() {
   const [selectedChild, setSelectedChild] = useState("");
   const [selectedDevice, setSelectedDevice] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sessionDurations, setSessionDurations] = useState<Record<string, number>>({});
 
   // Fetch active manual sessions
   const { data: activeSessions } = useQuery({
@@ -45,6 +47,36 @@ export function QuickSessionControl() {
     },
     refetchInterval: 5000, // Refresh every 5 seconds
   });
+
+  useEffect(() => {
+    if (!activeSessions || activeSessions.length === 0) {
+      setSessionDurations({});
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const durations: Record<string, number> = {};
+      activeSessions.forEach((session: any) => {
+        durations[session.id] = differenceInSeconds(
+          new Date(),
+          new Date(session.start_time)
+        );
+      });
+      setSessionDurations(durations);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeSessions]);
+
+  const formatDuration = (seconds: number) => {
+    const safeSeconds = Math.max(0, seconds || 0);
+    const hours = Math.floor(safeSeconds / 3600);
+    const minutes = Math.floor((safeSeconds % 3600) / 60);
+    const secs = safeSeconds % 60;
+    return `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
 
   // Fetch children and devices for start dialog
   const { data: children } = useQuery({
@@ -173,19 +205,34 @@ export function QuickSessionControl() {
 
         {hasActiveSessions && (
           <div className="text-xs space-y-1 px-2 py-1.5 bg-muted rounded-md">
-            {activeSessions.map((session: any) => (
-              <div key={session.id} className="flex items-center justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{session.children.name}</p>
-                  <p className="text-muted-foreground truncate">
-                    {session.devices.device_type}
-                  </p>
+            {activeSessions.map((session: any) => {
+              const duration = sessionDurations[session.id] || 0;
+
+              return (
+                <div
+                  key={session.id}
+                  className="flex items-center justify-between gap-2"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{session.children.name}</p>
+                    <p className="text-muted-foreground truncate">
+                      {session.devices.device_type}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge variant="secondary" className="text-[10px] font-mono">
+                      Manual
+                    </Badge>
+                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span className="font-mono">
+                        {formatDuration(duration)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <Badge variant="secondary" className="text-xs font-mono">
-                  Manual
-                </Badge>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
