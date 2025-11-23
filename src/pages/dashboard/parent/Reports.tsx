@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWeeklyStats } from "@/hooks/useWeeklyStats";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { subMonths, format } from "date-fns";
+import { subMonths, subDays, format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 import { Clock, BookOpen, Tv, TrendingUp, TrendingDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,6 +11,64 @@ import { motion } from "framer-motion";
 
 export default function Reports() {
   const { data: weeklyStats, isLoading: isLoadingWeekly } = useWeeklyStats();
+
+  // Fetch daily stats
+  const { data: dailyStats, isLoading: isLoadingDaily } = useQuery({
+    queryKey: ["daily-stats"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const today = new Date();
+      const sevenDaysAgo = subDays(today, 7);
+
+      const { data: children } = await supabase
+        .from("children")
+        .select("id")
+        .eq("parent_id", user.id);
+
+      if (!children || children.length === 0) return [];
+
+      const childIds = children.map(c => c.id);
+
+      const { data: aggregates } = await supabase
+        .from("child_daily_aggregate")
+        .select("*")
+        .in("child_id", childIds)
+        .gte("activity_date", format(sevenDaysAgo, "yyyy-MM-dd"))
+        .lte("activity_date", format(today, "yyyy-MM-dd"))
+        .order("activity_date");
+
+      const dailyData: Record<string, any> = (aggregates || []).reduce((acc: any, agg: any) => {
+        const date = format(new Date(agg.activity_date), "MMM dd");
+        if (!acc[date]) {
+          acc[date] = {
+            date,
+            screenTime: 0,
+            tv: 0,
+            phone: 0,
+            tablet: 0,
+            laptop: 0,
+          };
+        }
+        acc[date].screenTime += (agg.total_minutes || 0) / 60;
+        acc[date].tv += (agg.tv_minutes || 0) / 60;
+        acc[date].phone += (agg.phone_minutes || 0) / 60;
+        acc[date].tablet += (agg.tablet_minutes || 0) / 60;
+        acc[date].laptop += (agg.laptop_minutes || 0) / 60;
+        return acc;
+      }, {});
+
+      return Object.values(dailyData) as Array<{
+        date: string;
+        screenTime: number;
+        tv: number;
+        phone: number;
+        tablet: number;
+        laptop: number;
+      }>;
+    },
+  });
 
   const { data: monthlyStats, isLoading: isLoadingMonthly } = useQuery({
     queryKey: ["monthly-stats"],
@@ -59,7 +117,7 @@ export default function Reports() {
   const weeklyTrend = calculateTrend(weeklyStats || []);
   const monthlyTrend = calculateTrend(monthlyStats || []);
 
-  if (isLoadingWeekly || isLoadingMonthly) {
+  if (isLoadingWeekly || isLoadingMonthly || isLoadingDaily) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-64" />
@@ -81,11 +139,139 @@ export default function Reports() {
         </p>
       </div>
 
-      <Tabs defaultValue="weekly" className="space-y-6">
+      <Tabs defaultValue="daily" className="space-y-6">
         <TabsList>
+          <TabsTrigger value="daily">Daily Report</TabsTrigger>
           <TabsTrigger value="weekly">Weekly Report</TabsTrigger>
           <TabsTrigger value="monthly">Monthly Report</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="daily" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-lg bg-primary/10">
+                    <Clock className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Today</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {((dailyStats?.[dailyStats.length - 1]?.screenTime || 0)).toFixed(1)}h
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              <Card className="p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-lg bg-blue-500/10">
+                    <Tv className="h-6 w-6 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">TV</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {((dailyStats?.[dailyStats.length - 1]?.tv || 0)).toFixed(1)}h
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+            >
+              <Card className="p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-lg bg-purple-500/10">
+                    <BookOpen className="h-6 w-6 text-purple-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Phone</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {((dailyStats?.[dailyStats.length - 1]?.phone || 0)).toFixed(1)}h
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+            >
+              <Card className="p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-lg bg-orange-500/10">
+                    <Tv className="h-6 w-6 text-orange-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Tablet/Laptop</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {(((dailyStats?.[dailyStats.length - 1]?.tablet || 0) + (dailyStats?.[dailyStats.length - 1]?.laptop || 0))).toFixed(1)}h
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          </div>
+
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4 text-foreground">Daily Screen Time (Last 7 Days)</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={dailyStats}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="tv" fill="#3b82f6" name="TV" stackId="a" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="phone" fill="#8b5cf6" name="Phone" stackId="a" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="tablet" fill="#f59e0b" name="Tablet" stackId="a" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="laptop" fill="#10b981" name="Laptop" stackId="a" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
+
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4 text-foreground">Daily Insights</h3>
+            <div className="space-y-3 text-sm">
+              {((dailyStats?.[dailyStats.length - 1]?.screenTime || 0) > 3) && (
+                <p className="flex items-start gap-2">
+                  <span className="text-orange-500">⚠️</span>
+                  <span className="text-foreground">
+                    Today's screen time ({((dailyStats?.[dailyStats.length - 1]?.screenTime || 0)).toFixed(1)}h) is above recommended daily limits.
+                  </span>
+                </p>
+              )}
+              <p className="flex items-start gap-2">
+                <span className="text-blue-500">💡</span>
+                <span className="text-foreground">
+                  Track device usage patterns to understand which devices your children use most.
+                </span>
+              </p>
+            </div>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="weekly" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
