@@ -36,6 +36,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, subDays, isWithinInterval, startOfWeek, endOfWeek } from "date-fns";
 import { formatMinutesToTime, formatHoursToTime } from "@/lib/timeUtils";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const COLORS = {
   phone: "hsl(var(--chart-1))",
@@ -56,6 +58,7 @@ export default function ResearcherAnalytics() {
   });
   const [parentFilter, setParentFilter] = useState<string>("all");
   const [childFilter, setChildFilter] = useState<string>("");
+  const [selectedDailyDate, setSelectedDailyDate] = useState<Date>(new Date());
   
   const uniqueParents = Array.from(new Set(data?.consents.map(c => (c.profiles as any)?.email).filter(Boolean))) || [];
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -248,6 +251,58 @@ export default function ResearcherAnalytics() {
     };
   }, [data, dateRange, parentFilter, childFilter]);
 
+  // Fetch daily sessions for selected date
+  const { data: dailySessions } = useQuery({
+    queryKey: ["researcher-daily-sessions", format(selectedDailyDate, "yyyy-MM-dd"), data?.consents],
+    queryFn: async () => {
+      if (!data?.consents || data.consents.length === 0) return [];
+
+      const selectedDateStr = format(selectedDailyDate, "yyyy-MM-dd");
+      const grantedChildIds = data.consents.filter(c => c.granted).map(c => c.child_id);
+
+      if (grantedChildIds.length === 0) return [];
+
+      const { data: sessions, error } = await supabase
+        .from("screen_sessions")
+        .select(`
+          *,
+          children!inner(name, anonymous_id),
+          devices!inner(device_type, device_name)
+        `)
+        .in("child_id", grantedChildIds)
+        .gte("start_time", `${selectedDateStr}T00:00:00`)
+        .lte("start_time", `${selectedDateStr}T23:59:59`)
+        .order("start_time", { ascending: false });
+
+      if (error) throw error;
+      return sessions || [];
+    },
+    enabled: !!data?.consents,
+  });
+
+  // Calculate daily totals by device and child
+  const dailyTotals = useMemo(() => {
+    if (!dailySessions || dailySessions.length === 0) return null;
+
+    const byDevice: Record<string, number> = {};
+    const byChild: Record<string, { name: string; minutes: number }> = {};
+
+    dailySessions.forEach((session: any) => {
+      const device = session.devices?.device_type || "Unknown";
+      const childName = session.children?.name || "Unknown";
+      const minutes = session.duration_minutes || 0;
+
+      byDevice[device] = (byDevice[device] || 0) + minutes;
+      
+      if (!byChild[session.child_id]) {
+        byChild[session.child_id] = { name: childName, minutes: 0 };
+      }
+      byChild[session.child_id].minutes += minutes;
+    });
+
+    return { byDevice, byChild };
+  }, [dailySessions]);
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -439,9 +494,10 @@ export default function ResearcherAnalytics() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="reports">Detailed Reports</TabsTrigger>
+          <TabsTrigger value="daily">Daily Details</TabsTrigger>
           <TabsTrigger value="insights">Insights</TabsTrigger>
         </TabsList>
 
@@ -1125,6 +1181,134 @@ export default function ResearcherAnalytics() {
                   <Bar dataKey="tv" fill={COLORS.tv} name="TV" />
                 </BarChart>
               </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="daily" className="space-y-6">
+          {/* Date Picker */}
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Select Date</h3>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Calendar className="h-4 w-4" />
+                    {format(selectedDailyDate, "MMMM d, yyyy")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-card z-50" align="end">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDailyDate}
+                    onSelect={(date) => date && setSelectedDailyDate(date)}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </Card>
+
+          {/* Daily Summary Cards */}
+          {dailyTotals && (
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Total Screen Time by Device</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {Object.entries(dailyTotals.byDevice).map(([device, minutes]) => (
+                      <div key={device} className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">{device}</span>
+                        <span className="font-semibold">{formatMinutesToTime(minutes)}</span>
+                      </div>
+                    ))}
+                    <div className="pt-2 border-t">
+                      <div className="flex items-center justify-between font-semibold">
+                        <span>Total</span>
+                        <span className="text-primary">
+                          {formatMinutesToTime(Object.values(dailyTotals.byDevice).reduce((sum, m) => sum + m, 0))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Screen Time by Child</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {Object.entries(dailyTotals.byChild).map(([childId, data]) => (
+                      <div key={childId} className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">{data.name}</span>
+                        <span className="font-semibold">{formatMinutesToTime(data.minutes)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Session Details Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Session Details - {format(selectedDailyDate, "MMMM d, yyyy")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!dailySessions || dailySessions.length === 0 ? (
+                <div className="py-12 text-center text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p className="font-medium">No Sessions Found</p>
+                  <p className="text-sm mt-1">No screen time sessions recorded for {format(selectedDailyDate, "MMMM d, yyyy")}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {dailySessions.map((session: any) => (
+                    <motion.div
+                      key={session.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 rounded-lg border border-border bg-card hover:bg-accent/5 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={session.session_type === "manual" ? "default" : "secondary"}>
+                              {session.session_type || "auto"}
+                            </Badge>
+                            <span className="font-semibold">{session.children?.name}</span>
+                            <span className="text-xs text-muted-foreground">({session.children?.anonymous_id})</span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Smartphone className="h-4 w-4" />
+                              <span>{session.devices?.device_type}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              <span>
+                                {format(new Date(session.start_time), "HH:mm")} - {session.end_time ? format(new Date(session.end_time), "HH:mm") : "Ongoing"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-primary">
+                            {formatMinutesToTime(session.duration_minutes || 0)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">Duration</div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
