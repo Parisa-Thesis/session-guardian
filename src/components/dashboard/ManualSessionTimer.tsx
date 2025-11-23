@@ -78,6 +78,7 @@ export const ManualSessionTimer = ({ children, devices, activeSessions }: Manual
       child_id: selectedChild,
       device_id: selectedDevice,
       start_time: new Date().toISOString(),
+      session_type: "manual", // Mark as manual session
     });
 
     if (error) {

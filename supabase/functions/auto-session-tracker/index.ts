@@ -53,6 +53,7 @@ serve(async (req) => {
           child_id,
           device_id,
           start_time: new Date().toISOString(),
+          session_type: "automatic", // Mark as automatic session
         })
         .select()
         .single();

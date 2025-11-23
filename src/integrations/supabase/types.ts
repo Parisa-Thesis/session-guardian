@@ -570,6 +570,7 @@ export type Database = {
           id: string
           ip_address: string | null
           location: string | null
+          session_type: string | null
           start_time: string
           user_agent: string | null
         }
@@ -583,6 +584,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           location?: string | null
+          session_type?: string | null
           start_time: string
           user_agent?: string | null
         }
@@ -596,6 +598,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           location?: string | null
+          session_type?: string | null
           start_time?: string
           user_agent?: string | null
         }
