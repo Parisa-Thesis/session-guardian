@@ -1,13 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Shield, Settings, Activity, Baby } from "lucide-react";
+import { Users, Shield, Settings, Activity, Baby, CheckCircle } from "lucide-react";
 import { useAdminData } from "@/hooks/useAdminData";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -177,36 +179,59 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('admin.systemStats')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="flex items-center gap-3 p-4 rounded-lg border">
-                <Baby className="h-8 w-8 text-primary" />
-                <div>
-                  <p className="text-2xl font-bold">{data?.stats.childrenCount || 0}</p>
-                  <p className="text-sm text-muted-foreground">{t('admin.childrenRegistered')}</p>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('admin.systemStats')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4">
+                <div className="flex items-center gap-3 p-4 rounded-lg border">
+                  <Baby className="h-8 w-8 text-primary" />
+                  <div>
+                    <p className="text-2xl font-bold">{data?.stats.childrenCount || 0}</p>
+                    <p className="text-sm text-muted-foreground">{t('admin.childrenRegistered')}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-4 rounded-lg border">
+                  <Activity className="h-8 w-8 text-primary" />
+                  <div>
+                    <p className="text-2xl font-bold">{data?.recentSessions.length || 0}</p>
+                    <p className="text-sm text-muted-foreground">{t('admin.recentSessionsCount')}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-4 rounded-lg border">
+                  <Shield className="h-8 w-8 text-primary" />
+                  <div>
+                    <p className="text-2xl font-bold">{data?.stats.adminCount || 0}</p>
+                    <p className="text-sm text-muted-foreground">{t('admin.systemAdmins')}</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-4 rounded-lg border">
-                <Activity className="h-8 w-8 text-primary" />
-                <div>
-                  <p className="text-2xl font-bold">{data?.recentSessions.length || 0}</p>
-                  <p className="text-sm text-muted-foreground">{t('admin.recentSessionsCount')}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-4 rounded-lg border">
-                <Shield className="h-8 w-8 text-primary" />
-                <div>
-                  <p className="text-2xl font-bold">{data?.stats.adminCount || 0}</p>
-                  <p className="text-sm text-muted-foreground">{t('admin.systemAdmins')}</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Link to="/dashboard/admin/consents">
+                <Button variant="outline" className="w-full justify-start h-auto p-4">
+                  <div className="flex items-center gap-3 w-full">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <CheckCircle className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold">Consent Management</p>
+                      <p className="text-xs text-muted-foreground">View and manage all consent requests</p>
+                    </div>
+                  </div>
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
         </div>
       </div>
       <Footer />

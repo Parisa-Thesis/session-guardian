@@ -32,8 +32,10 @@ import ResearcherDashboard from "./pages/dashboard/researcher/ResearcherDashboar
 import ResearcherData from "./pages/dashboard/researcher/Data";
 import ResearcherAnalytics from "./pages/dashboard/researcher/Analytics";
 import ResearcherParticipants from "./pages/dashboard/researcher/Participants";
+import ResearcherConsentRequests from "./pages/dashboard/researcher/ConsentRequests";
 import ResearcherSessionLogs from "./pages/dashboard/researcher/SessionLogs";
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
+import AdminConsentManagement from "./pages/dashboard/admin/ConsentManagement";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import { MainLayout } from "./components/layout/MainLayout";
@@ -100,6 +102,7 @@ const App = () => (
             <Route path="data" element={<ResearcherData />} />
             <Route path="analytics" element={<ResearcherAnalytics />} />
             <Route path="participants" element={<ResearcherParticipants />} />
+            <Route path="consents" element={<ResearcherConsentRequests />} />
             <Route path="session-logs" element={<ResearcherSessionLogs />} />
           </Route>
 
@@ -109,6 +112,14 @@ const App = () => (
             element={
               <ProtectedRoute allowedRoles={["admin"]}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/admin/consents"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminConsentManagement />
               </ProtectedRoute>
             }
           />

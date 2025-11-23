@@ -26,6 +26,7 @@ const ResearcherDashboardLayout = () => {
     { path: "/dashboard/researcher/data", icon: Database, label: t('researcher.data') },
     { path: "/dashboard/researcher/analytics", icon: BarChart3, label: t('researcher.analytics') },
     { path: "/dashboard/researcher/participants", icon: Users, label: t('researcher.participants') },
+    { path: "/dashboard/researcher/consents", icon: Shield, label: "Consent Requests" },
     { path: "/dashboard/researcher/session-logs", icon: Clock, label: t('researcher.sessionLogs') },
   ];
 
