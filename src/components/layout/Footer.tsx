@@ -64,17 +64,6 @@ export const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4">{t('footer.privacy')}</h3>
             <ul className="space-y-2 text-sm">
-              <li>
-                <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">
-                  {t('footer.privacyPolicy')}
-                </Link>
-              </li>
-              <li>
-                <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">
-                  {t('footer.dataProtection')}
-                </Link>
-              </li>
-              <li>
                 <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">
                   {t('footer.ethicsCompliance')}
                 </Link>
