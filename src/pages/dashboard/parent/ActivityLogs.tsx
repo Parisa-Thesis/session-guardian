@@ -182,13 +182,14 @@ const ActivityLogs = () => {
       if (error) throw error;
 
       toast.success("Session stopped successfully");
+      // Refresh all views that depend on sessions
       queryClient.invalidateQueries({ queryKey: ["active-sessions"] });
       queryClient.invalidateQueries({ queryKey: ["completed-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["quick-active-sessions"] });
     } catch (error: any) {
       toast.error(error.message || "Failed to stop session");
     }
   };
-
   const getTotalStats = () => {
     if (!logs) return { total: 0, educational: 0, entertainment: 0 };
     
