@@ -75,18 +75,33 @@ export function AddActivityLogDialog({ onLogAdded }: AddActivityLogDialogProps) 
     enabled: open,
   });
 
-  // Fetch device types from device_catalog
-  const { data: deviceTypes } = useQuery({
-    queryKey: ["device-catalog"],
+  // Fetch device types from device_catalog (no hardcoded options)
+  type DeviceTypeOption = {
+    id: string;
+    label: string;
+  };
+
+  const { data: deviceTypes } = useQuery<DeviceTypeOption[]>({
+    queryKey: ["device-catalog-types"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("device_catalog")
-        .select("device_type")
+        .select("id, device_type")
         .order("device_type");
 
-      // Get unique device types
-      const uniqueTypes = [...new Set(data?.map(d => d.device_type) || [])];
-      return uniqueTypes;
+      if (error) throw error;
+
+      const uniqueByType = new Map<string, string>();
+      (data || []).forEach((row) => {
+        if (!uniqueByType.has(row.device_type)) {
+          uniqueByType.set(row.device_type, row.id);
+        }
+      });
+
+      return Array.from(uniqueByType.entries()).map(([type, id]) => ({
+        id,
+        label: type,
+      }));
     },
     enabled: open,
   });
@@ -296,9 +311,9 @@ export function AddActivityLogDialog({ onLogAdded }: AddActivityLogDialogProps) 
                 <SelectValue placeholder="Select device type" />
               </SelectTrigger>
               <SelectContent>
-                {deviceTypes?.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
+                {deviceTypes?.map((option) => (
+                  <SelectItem key={option.id} value={option.label}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
