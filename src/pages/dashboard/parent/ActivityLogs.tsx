@@ -162,6 +162,33 @@ const ActivityLogs = () => {
     }
   };
 
+  const handleStopSession = async (sessionId: string) => {
+    try {
+      const session = activeSessions?.find((s: any) => s.id === sessionId);
+      if (!session) return;
+
+      const endTime = new Date().toISOString();
+      const startTime = new Date(session.start_time);
+      const durationMinutes = Math.floor((new Date().getTime() - startTime.getTime()) / 60000);
+
+      const { error } = await supabase
+        .from("screen_sessions")
+        .update({
+          end_time: endTime,
+          duration_minutes: durationMinutes,
+        })
+        .eq("id", sessionId);
+
+      if (error) throw error;
+
+      toast.success("Session stopped successfully");
+      queryClient.invalidateQueries({ queryKey: ["active-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["completed-sessions"] });
+    } catch (error: any) {
+      toast.error(error.message || "Failed to stop session");
+    }
+  };
+
   const getTotalStats = () => {
     if (!logs) return { total: 0, educational: 0, entertainment: 0 };
     
@@ -374,6 +401,16 @@ const ActivityLogs = () => {
                             </p>
                           )}
                         </div>
+
+                        <Button
+                          onClick={() => handleStopSession(session.id)}
+                          variant="destructive"
+                          size="sm"
+                          className="ml-4"
+                        >
+                          <Square className="h-4 w-4 mr-2" />
+                          Stop
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
