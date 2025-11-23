@@ -157,6 +157,7 @@ export type Database = {
           age_group: Database["public"]["Enums"]["age_group_enum"] | null
           anonymous_id: string
           created_at: string
+          display_id: string | null
           id: string
           last_location: string | null
           last_location_updated_at: string | null
@@ -167,6 +168,7 @@ export type Database = {
           age_group?: Database["public"]["Enums"]["age_group_enum"] | null
           anonymous_id: string
           created_at?: string
+          display_id?: string | null
           id?: string
           last_location?: string | null
           last_location_updated_at?: string | null
@@ -177,6 +179,7 @@ export type Database = {
           age_group?: Database["public"]["Enums"]["age_group_enum"] | null
           anonymous_id?: string
           created_at?: string
+          display_id?: string | null
           id?: string
           last_location?: string | null
           last_location_updated_at?: string | null
@@ -268,6 +271,7 @@ export type Database = {
           created_at: string
           device_name: string | null
           device_type: string
+          display_id: string | null
           id: string
           ip_address: string | null
           last_used_at: string | null
@@ -279,6 +283,7 @@ export type Database = {
           created_at?: string
           device_name?: string | null
           device_type: string
+          display_id?: string | null
           id?: string
           ip_address?: string | null
           last_used_at?: string | null
@@ -290,6 +295,7 @@ export type Database = {
           created_at?: string
           device_name?: string | null
           device_type?: string
+          display_id?: string | null
           id?: string
           ip_address?: string | null
           last_used_at?: string | null
@@ -651,6 +657,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_child_display_id: {
+        Args: { child_name: string; child_uuid: string }
+        Returns: string
+      }
+      generate_device_display_id: {
+        Args: { child_name: string; device_type: string; device_uuid: string }
+        Returns: string
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
