@@ -159,12 +159,20 @@ export function AddDeviceDialog({ onDeviceAdded }: AddDeviceDialogProps) {
                 <SelectValue placeholder="Select device type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Tablet">Tablet</SelectItem>
-                <SelectItem value="Phone">Phone</SelectItem>
-                <SelectItem value="Laptop">Laptop</SelectItem>
-                <SelectItem value="Desktop">Desktop</SelectItem>
-                <SelectItem value="TV">TV</SelectItem>
-                <SelectItem value="Game Console">Game Console</SelectItem>
+                <SelectItem value="iPad">iPad</SelectItem>
+                <SelectItem value="iPhone">iPhone</SelectItem>
+                <SelectItem value="MacBook">MacBook</SelectItem>
+                <SelectItem value="iMac">iMac</SelectItem>
+                <SelectItem value="Android Tablet">Android Tablet</SelectItem>
+                <SelectItem value="Android Phone">Android Phone</SelectItem>
+                <SelectItem value="Windows Laptop">Windows Laptop</SelectItem>
+                <SelectItem value="Windows PC">Windows PC</SelectItem>
+                <SelectItem value="Chromebook">Chromebook</SelectItem>
+                <SelectItem value="Smart TV">Smart TV</SelectItem>
+                <SelectItem value="Samsung TV">Samsung TV</SelectItem>
+                <SelectItem value="PlayStation">PlayStation</SelectItem>
+                <SelectItem value="Xbox">Xbox</SelectItem>
+                <SelectItem value="Nintendo Switch">Nintendo Switch</SelectItem>
               </SelectContent>
             </Select>
             {errors.deviceType && (
