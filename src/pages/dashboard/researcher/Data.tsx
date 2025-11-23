@@ -25,31 +25,20 @@ export default function ResearcherData() {
     return (consent.profiles as any)?.email === parentFilter;
   }) || [];
 
-  // Get devices used by selected child
+  // Get devices used by selected child from activity logs
   const { data: childDevices } = useQuery({
-    queryKey: ["child-devices", childFilter],
+    queryKey: ["child-devices", childFilter, data?.activityLogs],
     queryFn: async () => {
-      if (childFilter === "all") return [];
+      if (childFilter === "all" || !data?.activityLogs) return [];
       
-      const consent = data?.consents.find(c => c.child_id === childFilter);
-      if (!consent) return [];
-
-      const { data: devices, error } = await supabase
-        .from("devices")
-        .select("device_type, device_name")
-        .eq("child_id", childFilter);
+      // Get unique device types from activity logs for this child
+      const childLogs = data.activityLogs.filter(log => log.child_id === childFilter);
+      const uniqueDeviceTypes = Array.from(new Set(childLogs.map(log => log.device_type)));
       
-      if (error) throw error;
-      
-      // Get unique device types
-      const uniqueDevices = Array.from(new Set(devices?.map(d => d.device_type) || []));
-      return uniqueDevices.map(type => {
-        const device = devices?.find(d => d.device_type === type);
-        return {
-          device_type: type,
-          device_name: device?.device_name || type,
-        };
-      });
+      return uniqueDeviceTypes.map(deviceType => ({
+        device_type: deviceType,
+        device_name: deviceType.charAt(0).toUpperCase() + deviceType.slice(1),
+      }));
     },
     enabled: childFilter !== "all" && !!data,
   });
