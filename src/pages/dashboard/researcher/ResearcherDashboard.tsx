@@ -7,21 +7,12 @@ import { useResearcherData } from "@/hooks/useResearcherData";
 import { Database, TrendingUp, Users, Download, BarChart3, Clock, Shield, BookOpen, Tv } from "lucide-react";
 import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, PieChart, Pie, Cell } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export default function ResearcherDashboard() {
-  const navigate = useNavigate();
   const { data, isLoading } = useResearcherData();
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    toast.success("خروج با موفقیت انجام شد");
-    navigate("/");
-  };
 
   if (isLoading) {
     return (
@@ -95,26 +86,7 @@ export default function ResearcherDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card">
-        <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Shield className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Researcher Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Anonymized data analysis</p>
-            </div>
-          </div>
-          <Button variant="outline" onClick={handleSignOut}>
-            Sign Out
-          </Button>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-7xl p-6 space-y-6">
+    <div className="space-y-6">
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-4">
           <motion.div
@@ -307,7 +279,6 @@ export default function ResearcherDashboard() {
             </Card>
           </>
         )}
-      </div>
     </div>
   );
 }

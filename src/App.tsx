@@ -22,10 +22,12 @@ import Consents from "./pages/dashboard/parent/Consents";
 import Sessions from "./pages/dashboard/parent/Sessions";
 import Charts from "./pages/dashboard/parent/Charts";
 
+import ResearcherDashboardLayout from "./pages/dashboard/researcher/ResearcherDashboardLayout";
 import ResearcherDashboard from "./pages/dashboard/researcher/ResearcherDashboard";
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import { MainLayout } from "./components/layout/MainLayout";
 
 const queryClient = new QueryClient();
 
@@ -42,12 +44,15 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
+          {/* Public routes with header/footer */}
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+          </Route>
+
           <Route path="/session-tracking" element={<SessionTracking />} />
 
-          {/* Parent Dashboard - parent only */}
+          {/* Parent Dashboard */}
           <Route
             path="/dashboard/parent"
             element={
@@ -68,17 +73,19 @@ const App = () => (
             <Route path="charts" element={<Charts />} />
           </Route>
 
-          {/* Researcher Dashboard - researcher only */}
+          {/* Researcher Dashboard */}
           <Route
             path="/dashboard/researcher"
             element={
               <ProtectedRoute allowedRoles={["researcher"]}>
-                <ResearcherDashboard />
+                <ResearcherDashboardLayout />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<ResearcherDashboard />} />
+          </Route>
 
-          {/* Admin Dashboard - admin only */}
+          {/* Admin Dashboard */}
           <Route
             path="/dashboard/admin"
             element={
@@ -88,7 +95,6 @@ const App = () => (
             }
           />
 
-          {/* 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
