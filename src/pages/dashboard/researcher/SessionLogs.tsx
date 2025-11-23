@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Clock, LogIn, LogOut } from "lucide-react";
+import { Clock, LogIn, LogOut, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
@@ -47,23 +47,73 @@ export default function SessionLogs() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <Clock className="h-6 w-6 text-primary" />
+      <div>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Clock className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Parent Activity Logs</h1>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-bold">{t('researcher.sessionLogs')}</h1>
-          <p className="text-muted-foreground">{t('researcher.parentUserActivity')}</p>
-        </div>
+        <p className="text-muted-foreground mt-2">
+          Track when parents log in and out of the system. This data helps understand engagement patterns and system usage by participating families.
+        </p>
       </div>
 
-      {!sessions || sessions.length === 0 ? (
-        <Card className="p-12 text-center">
-          <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">{t('researcher.noSessionData')}</h3>
-          <p className="text-muted-foreground">{t('researcher.noParentSessions')}</p>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-lg bg-blue-500/10">
+              <LogIn className="h-6 w-6 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Sessions</p>
+              <p className="text-2xl font-bold text-foreground">{sessions?.length || 0}</p>
+            </div>
+          </div>
         </Card>
-      ) : (
+
+        <Card className="p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-lg bg-green-500/10">
+              <Clock className="h-6 w-6 text-green-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Active Now</p>
+              <p className="text-2xl font-bold text-foreground">
+                {sessions?.filter((s) => !s.logout_time).length || 0}
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-lg bg-purple-500/10">
+              <Users className="h-6 w-6 text-purple-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Unique Parents</p>
+              <p className="text-2xl font-bold text-foreground">
+                {new Set(sessions?.map((s) => s.user_id)).size || 0}
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <h2 className="text-xl font-semibold mb-4 text-foreground">Recent Activity</h2>
+        {!sessions || sessions.length === 0 ? (
+          <Card className="p-12 text-center">
+            <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2 text-foreground">No Activity Data</h3>
+            <p className="text-muted-foreground">
+              No parent login sessions have been recorded yet.
+            </p>
+          </Card>
+        ) : (
         <div className="space-y-3">
           {sessions.map((session, index) => (
             <motion.div
@@ -132,7 +182,8 @@ export default function SessionLogs() {
             </motion.div>
           ))}
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
