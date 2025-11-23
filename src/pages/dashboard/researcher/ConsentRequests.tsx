@@ -32,7 +32,7 @@ export default function ConsentRequests() {
   const [selectedChild, setSelectedChild] = useState<string>("");
 
   // Fetch all parents and their children
-  const { data: parents } = useQuery({
+  const { data: parents, isLoading: parentsLoading } = useQuery({
     queryKey: ["parents-children"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -44,7 +44,10 @@ export default function ConsentRequests() {
         `)
         .eq("role", "parent");
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching parents:", error);
+        throw error;
+      }
       return data;
     },
   });
@@ -171,9 +174,9 @@ export default function ConsentRequests() {
             <div className="space-y-4">
               <div>
                 <Label>Select Parent</Label>
-                <Select value={selectedParent} onValueChange={setSelectedParent}>
+                <Select value={selectedParent} onValueChange={setSelectedParent} disabled={parentsLoading}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose a parent" />
+                    <SelectValue placeholder={parentsLoading ? "Loading parents..." : parents?.length === 0 ? "No parents found" : "Choose a parent"} />
                   </SelectTrigger>
                   <SelectContent>
                     {parents?.map((parent) => (
