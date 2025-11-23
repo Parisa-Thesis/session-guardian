@@ -200,28 +200,46 @@ export type Database = {
         Row: {
           child_id: string
           created_at: string
+          data_scope_activity_logs: boolean
+          data_scope_devices: boolean
+          data_scope_location: boolean
+          data_scope_sessions: boolean
+          data_scope_summary: boolean
           granted: boolean
           granted_at: string | null
           id: string
           parent_id: string
+          research_purpose: string | null
           researcher_id: string
         }
         Insert: {
           child_id: string
           created_at?: string
+          data_scope_activity_logs?: boolean
+          data_scope_devices?: boolean
+          data_scope_location?: boolean
+          data_scope_sessions?: boolean
+          data_scope_summary?: boolean
           granted?: boolean
           granted_at?: string | null
           id?: string
           parent_id: string
+          research_purpose?: string | null
           researcher_id: string
         }
         Update: {
           child_id?: string
           created_at?: string
+          data_scope_activity_logs?: boolean
+          data_scope_devices?: boolean
+          data_scope_location?: boolean
+          data_scope_sessions?: boolean
+          data_scope_summary?: boolean
           granted?: boolean
           granted_at?: string | null
           id?: string
           parent_id?: string
+          research_purpose?: string | null
           researcher_id?: string
         }
         Relationships: [

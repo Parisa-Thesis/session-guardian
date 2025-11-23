@@ -24,12 +24,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function ConsentRequests() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedParent, setSelectedParent] = useState<string>("");
   const [selectedChild, setSelectedChild] = useState<string>("");
+  const [dataScope, setDataScope] = useState({
+    summary: true,
+    activityLogs: false,
+    sessions: false,
+    location: false,
+    devices: false,
+  });
+  const [researchPurpose, setResearchPurpose] = useState("");
 
   // Fetch all parents and their children
   const { data: parents, isLoading: parentsLoading } = useQuery({
@@ -93,34 +103,52 @@ export default function ConsentRequests() {
 
   const requestConsentMutation = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       if (!selectedParent || !selectedChild) {
         throw new Error("Please select both parent and child");
       }
 
+      if (!hasAnyDataScope) {
+        throw new Error("Please select at least one type of data to request");
+      }
+
+      if (!researchPurpose.trim()) {
+        throw new Error("Please describe the research purpose");
+      }
+
       // Check if request already exists
-      const { data: existing } = await supabase
+      const { data: existing, error: existingError } = await supabase
         .from("consents")
-        .select("*")
+        .select("id")
         .eq("researcher_id", user.id)
         .eq("parent_id", selectedParent)
         .eq("child_id", selectedChild)
-        .single();
+        .maybeSingle();
+
+      if (existingError && (existingError as any).code !== "PGRST116") {
+        throw existingError;
+      }
 
       if (existing) {
         throw new Error("Consent request already exists for this child");
       }
 
-      const { error } = await supabase
-        .from("consents")
-        .insert({
-          researcher_id: user.id,
-          parent_id: selectedParent,
-          child_id: selectedChild,
-          granted: false,
-        });
+      const { error } = await supabase.from("consents").insert({
+        researcher_id: user.id,
+        parent_id: selectedParent,
+        child_id: selectedChild,
+        granted: false,
+        data_scope_summary: dataScope.summary,
+        data_scope_activity_logs: dataScope.activityLogs,
+        data_scope_sessions: dataScope.sessions,
+        data_scope_location: dataScope.location,
+        data_scope_devices: dataScope.devices,
+        research_purpose: researchPurpose.trim(),
+      });
 
       if (error) throw error;
     },
@@ -130,11 +158,26 @@ export default function ConsentRequests() {
       setDialogOpen(false);
       setSelectedParent("");
       setSelectedChild("");
+      setDataScope({
+        summary: true,
+        activityLogs: false,
+        sessions: false,
+        location: false,
+        devices: false,
+      });
+      setResearchPurpose("");
     },
     onError: (error: any) => {
       toast.error("Failed to send request: " + error.message);
     },
   });
+
+  const hasAnyDataScope =
+    dataScope.summary ||
+    dataScope.activityLogs ||
+    dataScope.sessions ||
+    dataScope.location ||
+    dataScope.devices;
 
   if (isLoading) {
     return (
@@ -191,9 +234,21 @@ export default function ConsentRequests() {
               {selectedParent && (
                 <div>
                   <Label>Select Child</Label>
-                  <Select value={selectedChild} onValueChange={setSelectedChild}>
+                  <Select
+                    value={selectedChild}
+                    onValueChange={setSelectedChild}
+                    disabled={!children}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose a child" />
+                      <SelectValue
+                        placeholder={
+                          !children
+                            ? "Loading children..."
+                            : children.length === 0
+                            ? "No children found for this parent"
+                            : "Choose a child"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {children?.map((child) => (
@@ -203,6 +258,11 @@ export default function ConsentRequests() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {children && children.length === 0 && (
+                    <p className="mt-1 text-xs text-destructive">
+                      This parent has no registered children yet.
+                    </p>
+                  )}
                 </div>
               )}
 
