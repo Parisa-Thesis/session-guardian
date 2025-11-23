@@ -7,8 +7,10 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { useTranslation } from "react-i18next";
 
 const AdminDashboard = () => {
+  const { t } = useTranslation();
   const { data, isLoading, error } = useAdminData();
 
   if (isLoading) {
@@ -40,8 +42,8 @@ const AdminDashboard = () => {
           <div className="mx-auto max-w-7xl">
             <Card className="p-12 text-center">
               <Shield className="h-12 w-12 mx-auto mb-4 text-destructive" />
-              <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
-              <p className="text-muted-foreground">You do not have permission to view this page.</p>
+              <h3 className="text-lg font-semibold mb-2">{t('admin.accessDenied')}</h3>
+              <p className="text-muted-foreground">{t('admin.noPermission')}</p>
             </Card>
           </div>
         </div>
@@ -56,8 +58,8 @@ const AdminDashboard = () => {
       <div className="flex-1 bg-background p-6">
         <div className="mx-auto max-w-7xl space-y-6">
         <div>
-          <h1 className="text-4xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground">System administration and user management</p>
+          <h1 className="text-4xl font-bold">{t('admin.dashboard')}</h1>
+          <p className="text-muted-foreground">{t('admin.systemAdmin')}</p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-4">
@@ -65,7 +67,7 @@ const AdminDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center text-base">
                 <Users className="mr-2 h-4 w-4" />
-                Total Users
+                {t('admin.totalUsers')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -77,7 +79,7 @@ const AdminDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center text-base">
                 <Shield className="mr-2 h-4 w-4" />
-                Parents
+                {t('admin.parents')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -89,7 +91,7 @@ const AdminDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center text-base">
                 <Activity className="mr-2 h-4 w-4" />
-                Researchers
+                {t('admin.researchers')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -101,7 +103,7 @@ const AdminDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center text-base">
                 <Settings className="mr-2 h-4 w-4" />
-                Devices
+                {t('admin.devices')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -113,7 +115,7 @@ const AdminDashboard = () => {
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>All Users ({data?.profiles.length || 0})</CardTitle>
+              <CardTitle>{t('admin.allUsers')} ({data?.profiles.length || 0})</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 max-h-96 overflow-y-auto">
               {data?.profiles.map((profile, index) => (
@@ -133,7 +135,7 @@ const AdminDashboard = () => {
                     profile.role === "researcher" ? "secondary" :
                     "outline"
                   }>
-                    {profile.role}
+                    {t(`roles.${profile.role}`)}
                   </Badge>
                 </motion.div>
               ))}
@@ -142,7 +144,7 @@ const AdminDashboard = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Recent Sessions</CardTitle>
+              <CardTitle>{t('admin.recentSessions')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 max-h-96 overflow-y-auto">
               {data?.recentSessions.map((session, index) => (
@@ -158,7 +160,7 @@ const AdminDashboard = () => {
                       {session.user_id.slice(0, 8)}...
                     </Badge>
                     <Badge className={session.logout_time ? "bg-muted" : "bg-green-500/10 text-green-500"}>
-                      {session.logout_time ? "Ended" : "Active"}
+                      {session.logout_time ? t('admin.ended') : t('researcher.active')}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -166,7 +168,7 @@ const AdminDashboard = () => {
                   </p>
                   {session.session_duration_seconds && (
                     <p className="text-xs text-muted-foreground">
-                      Duration: {Math.floor(session.session_duration_seconds / 60)}m
+                      {t('researcher.duration')}: {Math.floor(session.session_duration_seconds / 60)}m
                     </p>
                   )}
                 </motion.div>
@@ -177,7 +179,7 @@ const AdminDashboard = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>System Statistics</CardTitle>
+            <CardTitle>{t('admin.systemStats')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-3">
@@ -185,21 +187,21 @@ const AdminDashboard = () => {
                 <Baby className="h-8 w-8 text-primary" />
                 <div>
                   <p className="text-2xl font-bold">{data?.stats.childrenCount || 0}</p>
-                  <p className="text-sm text-muted-foreground">Children Registered</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.childrenRegistered')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-4 rounded-lg border">
                 <Activity className="h-8 w-8 text-primary" />
                 <div>
                   <p className="text-2xl font-bold">{data?.recentSessions.length || 0}</p>
-                  <p className="text-sm text-muted-foreground">Recent Sessions</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.recentSessionsCount')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-4 rounded-lg border">
                 <Shield className="h-8 w-8 text-primary" />
                 <div>
                   <p className="text-2xl font-bold">{data?.stats.adminCount || 0}</p>
-                  <p className="text-sm text-muted-foreground">System Admins</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.systemAdmins')}</p>
                 </div>
               </div>
             </div>

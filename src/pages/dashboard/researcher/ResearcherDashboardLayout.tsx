@@ -6,25 +6,27 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { useTranslation } from "react-i18next";
 
 const ResearcherDashboardLayout = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    toast.success("خروج با موفقیت انجام شد");
+    toast.success(t('auth.signOutSuccess'));
     navigate("/");
   };
 
   const isActive = (path: string) => location.pathname === path;
 
   const navItems = [
-    { path: "/dashboard/researcher", icon: Home, label: "Dashboard" },
-    { path: "/dashboard/researcher/data", icon: Database, label: "Data" },
-    { path: "/dashboard/researcher/analytics", icon: BarChart3, label: "Analytics" },
-    { path: "/dashboard/researcher/participants", icon: Users, label: "Participants" },
-    { path: "/dashboard/researcher/session-logs", icon: Clock, label: "Session Logs" },
+    { path: "/dashboard/researcher", icon: Home, label: t('researcher.dashboard') },
+    { path: "/dashboard/researcher/data", icon: Database, label: t('researcher.data') },
+    { path: "/dashboard/researcher/analytics", icon: BarChart3, label: t('researcher.analytics') },
+    { path: "/dashboard/researcher/participants", icon: Users, label: t('researcher.participants') },
+    { path: "/dashboard/researcher/session-logs", icon: Clock, label: t('researcher.sessionLogs') },
   ];
 
   return (
@@ -35,7 +37,7 @@ const ResearcherDashboardLayout = () => {
         <aside className="w-64 border-r bg-card">
           <div className="flex h-16 items-center border-b px-6">
             <Shield className="mr-2 h-6 w-6 text-primary" />
-            <span className="text-lg font-bold">Researcher Panel</span>
+            <span className="text-lg font-bold">{t('researcher.researcherPanel')}</span>
           </div>
           <nav className="space-y-1 p-4">
             {navItems.map((item) => (
@@ -55,7 +57,7 @@ const ResearcherDashboardLayout = () => {
               onClick={handleSignOut}
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
+              {t('common.signOut')}
             </Button>
           </nav>
         </aside>
