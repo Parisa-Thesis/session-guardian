@@ -14,8 +14,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export const Header = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -93,16 +96,18 @@ export const Header = () => {
           <div className="p-1.5 rounded-lg bg-primary/10">
             <Shield className="h-5 w-5 text-primary" />
           </div>
-          <span className="text-lg font-bold">Screen Guardian</span>
+          <span className="text-lg font-bold">{t('parent.screenGuardian')}</span>
         </Link>
 
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-2">
           <Link to="/">
             <Button variant="ghost" size="sm" className="gap-2">
               <Home className="h-4 w-4" />
-              Home
+              {t('common.home')}
             </Button>
           </Link>
+
+          <LanguageSwitcher />
 
           {user ? (
             <DropdownMenu>
@@ -126,7 +131,7 @@ export const Header = () => {
                     </p>
                     {profile?.role && (
                       <Badge variant={getRoleBadgeColor(profile.role)} className="w-fit text-xs">
-                        {profile.role}
+                        {t(`roles.${profile.role}`)}
                       </Badge>
                     )}
                   </div>
@@ -134,26 +139,26 @@ export const Header = () => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate(getDashboardLink())}>
                   <LayoutDashboard className="mr-2 h-4 w-4" />
-                  <span>Dashboard</span>
+                  <span>{t('header.dashboard')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate(getDashboardLink())}>
                   <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
+                  <span>{t('header.profile')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign Out</span>
+                  <span>{t('common.signOut')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <>
               <Link to="/auth">
-                <Button variant="ghost">Sign In</Button>
+                <Button variant="ghost">{t('auth.signIn')}</Button>
               </Link>
               <Link to="/auth">
-                <Button>Sign Up</Button>
+                <Button>{t('auth.signUp')}</Button>
               </Link>
             </>
           )}

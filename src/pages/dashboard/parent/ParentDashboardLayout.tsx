@@ -6,28 +6,30 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { useTranslation } from "react-i18next";
 
 const ParentDashboardLayout = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    toast.success("Signed out successfully");
+    toast.success(t('auth.signOutSuccess'));
     navigate("/");
   };
 
   const isActive = (path: string) => location.pathname === path;
 
   const navItems = [
-    { path: "/dashboard/parent", icon: Home, label: "Overview" },
-    { path: "/dashboard/parent/children", icon: Users, label: "Children" },
-    { path: "/dashboard/parent/devices", icon: Smartphone, label: "Devices" },
-    { path: "/dashboard/parent/sessions", icon: Clock, label: "Sessions" },
-    { path: "/dashboard/parent/device-integration", icon: Wifi, label: "Auto Tracking" },
-    { path: "/dashboard/parent/activity-logs", icon: Activity, label: "Activity Logs" },
-    { path: "/dashboard/parent/parental-controls", icon: Shield, label: "Parental Controls" },
-    { path: "/dashboard/parent/reports", icon: BarChart3, label: "Reports" },
+    { path: "/dashboard/parent", icon: Home, label: t('parent.overview') },
+    { path: "/dashboard/parent/children", icon: Users, label: t('parent.children') },
+    { path: "/dashboard/parent/devices", icon: Smartphone, label: t('parent.devices') },
+    { path: "/dashboard/parent/sessions", icon: Clock, label: t('parent.sessions') },
+    { path: "/dashboard/parent/device-integration", icon: Wifi, label: t('parent.autoTracking') },
+    { path: "/dashboard/parent/activity-logs", icon: Activity, label: t('parent.activityLogs') },
+    { path: "/dashboard/parent/parental-controls", icon: Shield, label: t('parent.parentalControls') },
+    { path: "/dashboard/parent/reports", icon: BarChart3, label: t('parent.reports') },
   ];
 
   return (
@@ -38,7 +40,7 @@ const ParentDashboardLayout = () => {
         <aside className="w-64 border-r bg-card">
           <div className="flex h-16 items-center border-b px-6">
             <Shield className="mr-2 h-6 w-6 text-primary" />
-            <span className="text-lg font-bold">Screen Guardian</span>
+            <span className="text-lg font-bold">{t('parent.screenGuardian')}</span>
           </div>
           <nav className="space-y-1 p-4">
             {navItems.map((item) => (
@@ -58,7 +60,7 @@ const ParentDashboardLayout = () => {
               onClick={handleSignOut}
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
+              {t('common.signOut')}
             </Button>
           </nav>
         </aside>
