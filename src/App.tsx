@@ -9,6 +9,10 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import SessionTracking from "./pages/SessionTracking";
 import NotFound from "./pages/NotFound";
+import AboutUs from "./pages/AboutUs";
+import Contact from "./pages/Contact";
+import Privacy from "./pages/Privacy";
+import GetStarted from "./pages/GetStarted";
 
 import ParentDashboardLayout from "./pages/dashboard/parent/ParentDashboardLayout";
 import ParentDashboard from "./pages/dashboard/parent/ParentDashboard";
@@ -53,6 +57,10 @@ const App = () => (
           <Route element={<MainLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/get-started" element={<GetStarted />} />
           </Route>
 
           <Route path="/session-tracking" element={<SessionTracking />} />

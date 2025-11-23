@@ -38,7 +38,7 @@ export const Footer = () => {
               <li className="leading-relaxed">{t('footer.researcherGuide')}</li>
             </ul>
             <Link 
-              to="/auth" 
+              to="/get-started" 
               className="inline-block mt-3 text-sm text-primary hover:underline font-medium"
             >
               {t('footer.getStarted')} →
@@ -51,26 +51,33 @@ export const Footer = () => {
             <p className="text-sm text-muted-foreground mb-4">
               {t('footer.aboutUsDesc')}
             </p>
+            <Link 
+              to="/about"
+              className="text-sm text-primary hover:underline font-medium block mb-4"
+            >
+              {t('footer.aboutUs')} →
+            </Link>
+            
             <h4 className="font-semibold mb-3 mt-6">{t('footer.contact')}</h4>
-            <div className="space-y-2 text-sm">
-              <div>
-                <p className="text-muted-foreground">{t('footer.contactEmail')}:</p>
-                <a 
-                  href="mailto:support@screenguardian.edu" 
-                  className="text-primary hover:underline"
-                >
-                  {t('footer.contactSupport')}
-                </a>
-              </div>
-              <div>
-                <p className="text-muted-foreground">{t('footer.contactResearch')}:</p>
-                <a 
-                  href="mailto:research@screenguardian.edu" 
-                  className="text-primary hover:underline"
-                >
-                  {t('footer.contactResearchEmail')}
-                </a>
-              </div>
+            <Link 
+              to="/contact"
+              className="text-sm text-primary hover:underline font-medium block mb-3"
+            >
+              {t('footer.contact')} →
+            </Link>
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <a 
+                href="mailto:support@screenguardian.edu" 
+                className="hover:text-foreground block"
+              >
+                {t('footer.contactSupport')}
+              </a>
+              <a 
+                href="mailto:research@screenguardian.edu" 
+                className="hover:text-foreground block"
+              >
+                {t('footer.contactResearchEmail')}
+              </a>
             </div>
           </div>
 
@@ -79,17 +86,17 @@ export const Footer = () => {
             <h3 className="font-semibold mb-4">{t('footer.privacy')}</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">
                   {t('footer.privacyPolicy')}
                 </Link>
               </li>
               <li>
-                <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">
                   {t('footer.dataProtection')}
                 </Link>
               </li>
               <li>
-                <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">
                   {t('footer.ethicsCompliance')}
                 </Link>
               </li>
