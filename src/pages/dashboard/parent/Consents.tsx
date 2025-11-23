@@ -174,6 +174,20 @@ export default function Consents() {
                         <p className="text-sm text-muted-foreground">
                           Child: {(consent.children as any)?.name} (ID: {(consent.children as any)?.anonymous_id})
                         </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Data requested: {([
+                            consent.data_scope_summary && "Aggregated stats",
+                            consent.data_scope_activity_logs && "Detailed daily logs",
+                            consent.data_scope_sessions && "Session-level data",
+                            consent.data_scope_location && "Approximate location",
+                            consent.data_scope_devices && "Device information",
+                          ].filter(Boolean) as string[]).join(", ")}
+                        </p>
+                        {consent.research_purpose && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Purpose: {consent.research_purpose}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -225,6 +239,20 @@ export default function Consents() {
                         <p className="text-sm text-muted-foreground">
                           Child: {(consent.children as any)?.name} (ID: {(consent.children as any)?.anonymous_id})
                         </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Data granted: {([
+                            consent.data_scope_summary && "Aggregated stats",
+                            consent.data_scope_activity_logs && "Detailed daily logs",
+                            consent.data_scope_sessions && "Session-level data",
+                            consent.data_scope_location && "Approximate location",
+                            consent.data_scope_devices && "Device information",
+                          ].filter(Boolean) as string[]).join(", ")}
+                        </p>
+                        {consent.research_purpose && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Purpose: {consent.research_purpose}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <Button

@@ -116,10 +116,6 @@ export default function ConsentRequests() {
         throw new Error("Please select at least one type of data to request");
       }
 
-      if (!researchPurpose.trim()) {
-        throw new Error("Please describe the research purpose");
-      }
-
       // Check if request already exists
       const { data: existing, error: existingError } = await supabase
         .from("consents")
@@ -147,7 +143,7 @@ export default function ConsentRequests() {
         data_scope_sessions: dataScope.sessions,
         data_scope_location: dataScope.location,
         data_scope_devices: dataScope.devices,
-        research_purpose: researchPurpose.trim(),
+        research_purpose: researchPurpose.trim() || null,
       });
 
       if (error) throw error;
