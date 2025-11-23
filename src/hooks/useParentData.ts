@@ -17,7 +17,7 @@ export const useParentData = () => {
       // Fetch devices
       const { data: devices } = await supabase
         .from("devices")
-        .select("*, children!inner(*)")
+        .select("*, children!inner(*, display_id)")
         .eq("children.parent_id", user.id);
 
       // Fetch active sessions
