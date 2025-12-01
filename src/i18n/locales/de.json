@@ -192,7 +192,45 @@
     "logout": "Abmeldung",
     "duration": "Dauer",
     "device": "Gerät",
-    "active": "Aktiv"
+    "active": "Aktiv",
+    "cohorts": {
+      "title": "Kohortenverwaltung",
+      "subtitle": "Teilnehmer für vergleichende Analysen gruppieren",
+      "create": "Kohorte erstellen",
+      "createTitle": "Neue Kohorte erstellen",
+      "nameLabel": "Kohortenname",
+      "namePlaceholder": "z.B. Kontrollgruppe A",
+      "descLabel": "Beschreibung (Optional)",
+      "descPlaceholder": "Beschreibung dieser Kohorte...",
+      "manageMembers": "Mitglieder verwalten",
+      "members": "Mitglieder",
+      "noCohorts": "Noch keine Kohorten erstellt. Erstellen Sie eine, um Teilnehmer zu gruppieren."
+    },
+    "analyticsFilters": {
+      "ageGroup": "Nach Altersgruppe filtern",
+      "cohort": "Nach Kohorte filtern",
+      "parent": "Nach Elternteil filtern",
+      "allAges": "Alle Altersgruppen",
+      "allCohorts": "Alle Kohorten",
+      "allParents": "Alle Eltern",
+      "searchChild": "Nach Kindesnamen oder ID suchen..."
+    },
+    "analyticsTitle": "Analysen & Berichte",
+    "analyticsSubtitle": "Umfassende Datenanalyse und Einblicke",
+    "heatmap": {
+      "title": "Aktivitäts-Heatmap",
+      "lessActive": "Weniger aktiv",
+      "moreActive": "Aktiver",
+      "minutes": "Minuten"
+    },
+    "export": {
+      "button": "Daten exportieren",
+      "title": "Daten exportieren",
+      "description": "Analysedaten für weitere Analysen herunterladen.",
+      "format": "Exportformat",
+      "columns": "Spalten auswählen",
+      "download": "Herunterladen"
+    }
   },
   "admin": {
     "dashboard": "Admin Dashboard",

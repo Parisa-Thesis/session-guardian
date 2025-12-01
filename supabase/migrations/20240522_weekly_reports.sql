@@ -19,3 +19,9 @@ CREATE POLICY "Users can view their own weekly reports"
     ON public.weekly_reports
     FOR SELECT
     USING (user_id = auth.uid());
+
+-- Allow users to insert their own weekly reports
+CREATE POLICY "Users can create their own weekly reports"
+    ON public.weekly_reports
+    FOR INSERT
+    WITH CHECK (user_id = auth.uid());

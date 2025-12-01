@@ -1,4 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useResearcherData } from "@/hooks/useResearcherData";
@@ -18,7 +21,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
   Area,
@@ -33,11 +36,13 @@ import {
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, subDays, isWithinInterval, startOfWeek, endOfWeek } from "date-fns";
 import { formatMinutesToTime, formatHoursToTime } from "@/lib/timeUtils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
 
 const COLORS = {
   phone: "hsl(var(--chart-1))",
@@ -49,8 +54,9 @@ const COLORS = {
 };
 
 export default function ResearcherAnalytics() {
+  const { t } = useTranslation();
   const { data, isLoading } = useResearcherData();
-  
+
   // Date range state
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
     from: subDays(new Date(), 30),
@@ -59,7 +65,18 @@ export default function ResearcherAnalytics() {
   const [parentFilter, setParentFilter] = useState<string>("all");
   const [childFilter, setChildFilter] = useState<string>("");
   const [selectedDailyDate, setSelectedDailyDate] = useState<Date>(new Date());
-  
+  const [ageGroupFilter, setAgeGroupFilter] = useState<string>("all");
+  const [cohortFilter, setCohortFilter] = useState<string>("all");
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv');
+  const [exportColumns, setExportColumns] = useState({
+    date: true,
+    childId: true,
+    screenTime: true,
+    appUsage: true,
+    location: false
+  });
+
   const uniqueParents = Array.from(new Set(data?.consents.map(c => (c.profiles as any)?.email).filter(Boolean))) || [];
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -76,23 +93,28 @@ export default function ResearcherAnalytics() {
   const chartData = useMemo(() => {
     if (!data?.activityLogs) return null;
 
-    // Filter by date range, parent, and child
+    // Filter by date range, parent, child, age group, and cohort
     const filteredLogs = data.activityLogs.filter((log) => {
       const consent = data.consents.find(c => c.child_id === log.child_id);
       const parentEmail = (consent?.profiles as any)?.email || "";
       const childName = (consent?.children as any)?.name || "";
       const anonymousId = (consent?.children as any)?.anonymous_id || "";
-      
+      const ageGroup = (consent?.children as any)?.age_group || "";
+
       const inDateRange = isWithinInterval(new Date(log.activity_date), {
         start: dateRange.from,
         end: dateRange.to,
       });
       const matchesParent = parentFilter === "all" || parentEmail === parentFilter;
-      const matchesChild = !childFilter || 
+      const matchesChild = !childFilter ||
         childName.toLowerCase().includes(childFilter.toLowerCase()) ||
         anonymousId.toLowerCase().includes(childFilter.toLowerCase());
-      
-      return inDateRange && matchesParent && matchesChild;
+      const matchesAgeGroup = ageGroupFilter === "all" || ageGroup === ageGroupFilter;
+
+      const matchesCohort = cohortFilter === "all" ||
+        data.cohorts?.find((c: any) => c.id === cohortFilter)?.cohort_members?.some((m: any) => m.child_id === log.child_id);
+
+      return inDateRange && matchesParent && matchesChild && matchesAgeGroup && matchesCohort;
     });
 
     // Device usage distribution
@@ -156,12 +178,15 @@ export default function ResearcherAnalytics() {
     const ageGroupData = data.consents.reduce((acc, consent) => {
       const child = consent.children as any;
       const ageGroup = child?.age_group || "unknown";
-      
+
+      // Apply filters to age group data too
+      if (ageGroupFilter !== "all" && ageGroup !== ageGroupFilter) return acc;
+
       const childLogs = filteredLogs.filter((log) => log.child_id === consent.child_id);
       const totalTime = childLogs.reduce((sum, log) => sum + log.hours_screen_time, 0);
       const eduTime = childLogs.reduce((sum, log) => sum + log.hours_educational, 0);
       const entTime = childLogs.reduce((sum, log) => sum + log.hours_entertainment, 0);
-      
+
       if (!acc[ageGroup]) {
         acc[ageGroup] = {
           ageGroup,
@@ -172,12 +197,12 @@ export default function ResearcherAnalytics() {
           avgDaily: 0,
         };
       }
-      
+
       acc[ageGroup].totalTime += totalTime;
       acc[ageGroup].educationalTime += eduTime;
       acc[ageGroup].entertainmentTime += entTime;
       acc[ageGroup].participants += 1;
-      
+
       return acc;
     }, {} as Record<string, any>);
 
@@ -193,8 +218,11 @@ export default function ResearcherAnalytics() {
     const ageDeviceData = data.consents.map((consent) => {
       const child = consent.children as any;
       const ageGroup = child?.age_group || "unknown";
+
+      if (ageGroupFilter !== "all" && ageGroup !== ageGroupFilter) return null;
+
       const childLogs = filteredLogs.filter((log) => log.child_id === consent.child_id);
-      
+
       const deviceTotals = childLogs.reduce((acc, log) => {
         acc[log.device_type] = (acc[log.device_type] || 0) + log.hours_screen_time;
         return acc;
@@ -207,7 +235,7 @@ export default function ResearcherAnalytics() {
         laptop: deviceTotals.laptop || 0,
         tv: deviceTotals.tv || 0,
       };
-    }).reduce((acc, curr) => {
+    }).filter(Boolean).reduce((acc: any[], curr: any) => {
       const existing = acc.find((item) => item.ageGroup === curr.ageGroup);
       if (existing) {
         existing.phone += curr.phone;
@@ -219,7 +247,7 @@ export default function ResearcherAnalytics() {
         acc.push({ ...curr, count: 1 });
       }
       return acc;
-    }, [] as any[]).map((item) => ({
+    }, [] as any[]).map((item: any) => ({
       ageGroup: item.ageGroup,
       phone: Math.round((item.phone / item.count) * 10) / 10,
       tablet: Math.round((item.tablet / item.count) * 10) / 10,
@@ -248,10 +276,82 @@ export default function ResearcherAnalytics() {
       ageGroupChartData,
       ageDeviceData,
       totalDataPoints: filteredLogs.length,
+      filteredLogs // Pass this for export
     };
-  }, [data, dateRange, parentFilter, childFilter]);
+  }, [data, dateRange, parentFilter, childFilter, ageGroupFilter, cohortFilter]);
 
-  // Fetch daily sessions for selected date
+  // Fetch sessions for heatmap (full range)
+  const { data: heatmapSessions } = useQuery({
+    queryKey: ["researcher-heatmap-sessions", format(dateRange.from, "yyyy-MM-dd"), format(dateRange.to, "yyyy-MM-dd"), data?.consents],
+    queryFn: async () => {
+      if (!data?.consents || data.consents.length === 0) return [];
+
+      const grantedChildIds = data.consents.filter(c => c.granted).map(c => c.child_id);
+      if (grantedChildIds.length === 0) return [];
+
+      const { data: sessions, error } = await supabase
+        .from("screen_sessions")
+        .select(`
+          *,
+          children!inner(name, anonymous_id, age_group),
+          devices!inner(device_type)
+        `)
+        .in("child_id", grantedChildIds)
+        .gte("start_time", `${format(dateRange.from, "yyyy-MM-dd")}T00:00:00`)
+        .lte("start_time", `${format(dateRange.to, "yyyy-MM-dd")}T23:59:59`);
+
+      if (error) throw error;
+      return sessions || [];
+    },
+    enabled: !!data?.consents,
+  });
+
+  // Calculate heatmap data
+  const heatmapData = useMemo(() => {
+    if (!heatmapSessions) return null;
+
+    // Initialize 7x24 grid (Days x Hours)
+    const grid = Array(7).fill(0).map(() => Array(24).fill(0));
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    heatmapSessions.forEach((session: any) => {
+      // Apply filters
+      const consent = data?.consents.find(c => c.child_id === session.child_id);
+      const parentEmail = (consent?.profiles as any)?.email || "";
+      const childName = session.children?.name || "";
+      const anonymousId = session.children?.anonymous_id || "";
+      const ageGroup = session.children?.age_group || "";
+
+      const matchesParent = parentFilter === "all" || parentEmail === parentFilter;
+      const matchesChild = !childFilter ||
+        childName.toLowerCase().includes(childFilter.toLowerCase()) ||
+        anonymousId.toLowerCase().includes(childFilter.toLowerCase());
+      const matchesAgeGroup = ageGroupFilter === "all" || ageGroup === ageGroupFilter;
+      const matchesCohort = cohortFilter === "all" ||
+        data?.cohorts?.find((c: any) => c.id === cohortFilter)?.cohort_members?.some((m: any) => m.child_id === session.child_id);
+
+      if (!matchesParent || !matchesChild || !matchesAgeGroup || !matchesCohort) return;
+
+      const start = new Date(session.start_time);
+      const end = session.end_time ? new Date(session.end_time) : new Date(start.getTime() + (session.duration_minutes || 0) * 60000);
+
+      // Simple approximation: increment the hour slot of the start time
+      // For more precision, we could iterate through every hour the session spans
+      const dayIndex = start.getDay(); // 0-6
+      const hourIndex = start.getHours(); // 0-23
+
+      grid[dayIndex][hourIndex] += (session.duration_minutes || 0);
+    });
+
+    // Normalize for visualization (optional, or just use raw minutes)
+    // Let's find max for color scaling
+    let maxMinutes = 0;
+    grid.forEach(row => row.forEach(mins => maxMinutes = Math.max(maxMinutes, mins)));
+
+    return { grid, days, maxMinutes };
+  }, [heatmapSessions, parentFilter, childFilter, ageGroupFilter, cohortFilter, data]);
+
+  // Fetch daily sessions for selected date (keep existing for Daily Details tab)
   const { data: dailySessions } = useQuery({
     queryKey: ["researcher-daily-sessions", format(selectedDailyDate, "yyyy-MM-dd"), data?.consents],
     queryFn: async () => {
@@ -293,7 +393,7 @@ export default function ResearcherAnalytics() {
       const minutes = session.duration_minutes || 0;
 
       byDevice[device] = (byDevice[device] || 0) + minutes;
-      
+
       if (!byChild[session.child_id]) {
         byChild[session.child_id] = { name: childName, minutes: 0 };
       }
@@ -325,15 +425,15 @@ export default function ResearcherAnalytics() {
             <TrendingUp className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">Analytics</h1>
-            <p className="text-muted-foreground">Data trends and behavioral insights</p>
+            <h1 className="text-3xl font-bold">{t('researcher.analyticsTitle')}</h1>
+            <p className="text-muted-foreground">{t('researcher.analyticsSubtitle')}</p>
           </div>
         </div>
         <Card className="p-12 text-center">
           <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">No Data Available</h3>
+          <h3 className="text-lg font-semibold mb-2">{t('researcher.noSessionData')}</h3>
           <p className="text-muted-foreground">
-            No parents have granted consent for data access yet.
+            {t('researcher.noParentSessions')}
           </p>
         </Card>
       </div>
@@ -342,7 +442,7 @@ export default function ResearcherAnalytics() {
 
   const handleExportData = () => {
     if (!chartData) return;
-    
+
     const csvContent = [
       ['Metric', 'Value'],
       ['Total Data Points', chartData.totalDataPoints],
@@ -351,7 +451,7 @@ export default function ResearcherAnalytics() {
       ['Total Participants', data?.stats.totalChildren || 0],
       ...chartData.dailyData.map(d => [`${d.date} Total`, `${d.total} hours`]),
     ].map(row => row.join(',')).join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -369,8 +469,8 @@ export default function ResearcherAnalytics() {
             <FileText className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">Analytics & Reports</h1>
-            <p className="text-muted-foreground">Comprehensive data analysis and insights</p>
+            <h1 className="text-3xl font-bold">{t('researcher.analyticsTitle')}</h1>
+            <p className="text-muted-foreground">{t('researcher.analyticsSubtitle')}</p>
           </div>
         </div>
 
@@ -397,7 +497,7 @@ export default function ResearcherAnalytics() {
           >
             90 Days
           </Button>
-          
+
           <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
@@ -434,17 +534,17 @@ export default function ResearcherAnalytics() {
         </div>
       </div>
 
-      {/* Participant and Child Filters */}
+      {/* Participant, Child, and Age Group Filters */}
       <Card className="p-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <Filter className="h-5 w-5 text-muted-foreground" />
           <div className="flex-1 flex flex-wrap gap-4">
             <Select value={parentFilter} onValueChange={setParentFilter}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filter by parent" />
+                <SelectValue placeholder={t('researcher.analyticsFilters.parent')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Parents</SelectItem>
+                <SelectItem value="all">{t('researcher.analyticsFilters.allParents')}</SelectItem>
                 {uniqueParents.map((email) => (
                   <SelectItem key={email} value={email}>
                     {email}
@@ -453,11 +553,36 @@ export default function ResearcherAnalytics() {
               </SelectContent>
             </Select>
             <Input
-              placeholder="Search by child name or ID..."
+              placeholder={t('researcher.analyticsFilters.searchChild')}
               value={childFilter}
               onChange={(e) => setChildFilter(e.target.value)}
               className="max-w-xs"
             />
+            <Select value={ageGroupFilter} onValueChange={setAgeGroupFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder={t('researcher.analyticsFilters.ageGroup')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('researcher.analyticsFilters.allAges')}</SelectItem>
+                <SelectItem value="5-8">5-8 Years</SelectItem>
+                <SelectItem value="9-12">9-12 Years</SelectItem>
+                <SelectItem value="13-15">13-15 Years</SelectItem>
+                <SelectItem value="16+">16+ Years</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={cohortFilter} onValueChange={setCohortFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder={t('researcher.analyticsFilters.cohort')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('researcher.analyticsFilters.allCohorts')}</SelectItem>
+                {data?.cohorts?.map((cohort: any) => (
+                  <SelectItem key={cohort.id} value={cohort.id}>
+                    {cohort.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </Card>
@@ -484,11 +609,74 @@ export default function ResearcherAnalytics() {
                 Child: {childFilter}
               </Badge>
             )}
+            {ageGroupFilter !== "all" && (
+              <Badge variant="outline" className="gap-2">
+                Age: {ageGroupFilter}
+              </Badge>
+            )}
+            {cohortFilter !== "all" && (
+              <Badge variant="outline" className="gap-2">
+                Cohort: {data?.cohorts?.find((c: any) => c.id === cohortFilter)?.name || cohortFilter}
+              </Badge>
+            )}
           </div>
-          <Button variant="outline" size="sm" onClick={handleExportData} className="gap-2">
-            <Download className="h-4 w-4" />
-            Export Data
-          </Button>
+
+          <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Download className="h-4 w-4" />
+                Export Data
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Export Data</DialogTitle>
+                <DialogDescription>Select columns and format to export.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Columns to Include</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="col-date" checked={exportColumns.date} onCheckedChange={(c) => setExportColumns({ ...exportColumns, date: !!c })} />
+                      <Label htmlFor="col-date">Date</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="col-child" checked={exportColumns.childId} onCheckedChange={(c) => setExportColumns({ ...exportColumns, childId: !!c })} />
+                      <Label htmlFor="col-child">Child ID</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="col-screen" checked={exportColumns.screenTime} onCheckedChange={(c) => setExportColumns({ ...exportColumns, screenTime: !!c })} />
+                      <Label htmlFor="col-screen">Screen Time</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="col-apps" checked={exportColumns.appUsage} onCheckedChange={(c) => setExportColumns({ ...exportColumns, appUsage: !!c })} />
+                      <Label htmlFor="col-apps">App Usage</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="col-loc" checked={exportColumns.location} onCheckedChange={(c) => setExportColumns({ ...exportColumns, location: !!c })} />
+                      <Label htmlFor="col-loc">Location</Label>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Format</Label>
+                  <Select value={exportFormat} onValueChange={(v: 'csv' | 'json') => setExportFormat(v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="csv">CSV</SelectItem>
+                      <SelectItem value="json">JSON</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleExportData}>Download Export</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </Card>
 
@@ -504,466 +692,466 @@ export default function ResearcherAnalytics() {
         <TabsContent value="overview" className="space-y-6">
           {/* Key Metrics */}
           <div className="grid gap-6 md:grid-cols-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Activity className="h-4 w-4 text-muted-foreground" />
-                Data Points
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{chartData?.totalDataPoints || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">In selected range</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-muted-foreground" />
+                    Data Points
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{chartData?.totalDataPoints || 0}</div>
+                  <p className="text-xs text-muted-foreground mt-1">In selected range</p>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                Avg Screen Time
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatHoursToTime(data.stats.avgScreenTime)}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Per day average</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    Avg Screen Time
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {formatHoursToTime(data.stats.avgScreenTime)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Per day average</p>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Smartphone className="h-4 w-4 text-muted-foreground" />
-                Participants
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{data.stats.totalChildren}</div>
-              <p className="text-xs text-muted-foreground mt-1">Active participants</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Smartphone className="h-4 w-4 text-muted-foreground" />
+                    Participants
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{data.stats.totalChildren}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Active participants</p>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                Edu Content
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {chartData?.contentData[0]
-                  ? Math.round(
-                      (chartData.contentData[0].value /
-                        (chartData.contentData[0].value + chartData.contentData[1].value)) *
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    Edu Content
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {chartData?.contentData[0]
+                      ? Math.round(
+                        (chartData.contentData[0].value /
+                          (chartData.contentData[0].value + chartData.contentData[1].value)) *
                         100
-                    )
-                  : 0}
-                %
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Educational usage</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
+                      )
+                      : 0}
+                    %
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Educational usage</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
 
-      {/* Charts Grid */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Daily Screen Time Trend */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>Daily Screen Time Trend</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={chartData?.dailyData || []}>
-                  <defs>
-                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={COLORS.phone} stopOpacity={0.8} />
-                      <stop offset="95%" stopColor={COLORS.phone} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis
-                    dataKey="date"
-                    className="text-xs"
-                    tick={{ fill: "hsl(var(--muted-foreground))" }}
-                  />
-                  <YAxis
-                    className="text-xs"
-                    tick={{ fill: "hsl(var(--muted-foreground))" }}
-                    label={{ value: "Hours", angle: -90, position: "insideLeft" }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="total"
-                    stroke={COLORS.phone}
-                    fillOpacity={1}
-                    fill="url(#colorTotal)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Device Usage Distribution */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.5 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>Device Usage Distribution</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={chartData?.deviceData || []}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {chartData?.deviceData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={Object.values(COLORS)[index % Object.values(COLORS).length]}
+          {/* Charts Grid */}
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Daily Screen Time Trend */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Daily Screen Time Trend</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <AreaChart data={chartData?.dailyData || []}>
+                      <defs>
+                        <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={COLORS.phone} stopOpacity={0.8} />
+                          <stop offset="95%" stopColor={COLORS.phone} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis
+                        dataKey="date"
+                        className="text-xs"
+                        tick={{ fill: "hsl(var(--muted-foreground))" }}
                       />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Educational vs Entertainment */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.6 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>Content Type Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData?.contentData || []}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis
-                    dataKey="name"
-                    className="text-xs"
-                    tick={{ fill: "hsl(var(--muted-foreground))" }}
-                  />
-                  <YAxis
-                    className="text-xs"
-                    tick={{ fill: "hsl(var(--muted-foreground))" }}
-                    label={{ value: "Hours", angle: -90, position: "insideLeft" }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
-                  />
-                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                    {chartData?.contentData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={
-                          entry.name === "Educational"
-                            ? COLORS.educational
-                            : COLORS.entertainment
-                        }
+                      <YAxis
+                        className="text-xs"
+                        tick={{ fill: "hsl(var(--muted-foreground))" }}
+                        label={{ value: "Hours", angle: -90, position: "insideLeft" }}
                       />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </motion.div>
+                      <RechartsTooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "6px",
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="total"
+                        stroke={COLORS.phone}
+                        fillOpacity={1}
+                        fill="url(#colorTotal)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-        {/* Average Screen Time by Device */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.7 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>Average Screen Time by Device</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData?.deviceAverages || []} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis
-                    type="number"
-                    className="text-xs"
-                    tick={{ fill: "hsl(var(--muted-foreground))" }}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="device"
-                    className="text-xs"
-                    tick={{ fill: "hsl(var(--muted-foreground))" }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
-                  />
-                  <Bar dataKey="average" fill={COLORS.tablet} radius={[0, 8, 8, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
+            {/* Device Usage Distribution */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Device Usage Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={chartData?.deviceData || []}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {chartData?.deviceData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={Object.values(COLORS)[index % Object.values(COLORS).length]}
+                          />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "6px",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-      {/* Age Group Comparative Analysis */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8 }}
-      >
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users2 className="h-5 w-5" />
-              Screen Time by Age Group
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={chartData?.ageGroupChartData || []}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis
-                  dataKey="ageGroup"
-                  className="text-xs"
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
-                />
-                <YAxis
-                  className="text-xs"
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
-                  label={{ value: "Avg Hours", angle: -90, position: "insideLeft" }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Legend />
-                <Bar
-                  dataKey="avgScreenTime"
-                  fill={COLORS.phone}
-                  name="Total Screen Time"
-                  radius={[8, 8, 0, 0]}
-                />
-                <Bar
-                  dataKey="avgEducational"
-                  fill={COLORS.educational}
-                  name="Educational"
-                  radius={[8, 8, 0, 0]}
-                />
-                <Bar
-                  dataKey="avgEntertainment"
-                  fill={COLORS.entertainment}
-                  name="Entertainment"
-                  radius={[8, 8, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </motion.div>
+            {/* Educational vs Entertainment */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.6 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Content Type Analysis</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={chartData?.contentData || []}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis
+                        dataKey="name"
+                        className="text-xs"
+                        tick={{ fill: "hsl(var(--muted-foreground))" }}
+                      />
+                      <YAxis
+                        className="text-xs"
+                        tick={{ fill: "hsl(var(--muted-foreground))" }}
+                        label={{ value: "Hours", angle: -90, position: "insideLeft" }}
+                      />
+                      <RechartsTooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "6px",
+                        }}
+                      />
+                      <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                        {chartData?.contentData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={
+                              entry.name === "Educational"
+                                ? COLORS.educational
+                                : COLORS.entertainment
+                            }
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-      {/* Device Preferences by Age Group */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.9 }}
-      >
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Smartphone className="h-5 w-5" />
-              Device Preferences by Age Group
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <RadarChart data={chartData?.ageDeviceData || []}>
-                <PolarGrid className="stroke-muted" />
-                <PolarAngleAxis
-                  dataKey="ageGroup"
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                />
-                <PolarRadiusAxis
-                  angle={90}
-                  domain={[0, "auto"]}
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
-                />
-                <Radar
-                  name="Phone"
-                  dataKey="phone"
-                  stroke={COLORS.phone}
-                  fill={COLORS.phone}
-                  fillOpacity={0.6}
-                />
-                <Radar
-                  name="Tablet"
-                  dataKey="tablet"
-                  stroke={COLORS.tablet}
-                  fill={COLORS.tablet}
-                  fillOpacity={0.6}
-                />
-                <Radar
-                  name="Laptop"
-                  dataKey="laptop"
-                  stroke={COLORS.laptop}
-                  fill={COLORS.laptop}
-                  fillOpacity={0.6}
-                />
-                <Radar
-                  name="TV"
-                  dataKey="tv"
-                  stroke={COLORS.tv}
-                  fill={COLORS.tv}
-                  fillOpacity={0.6}
-                />
-                <Legend />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </motion.div>
+            {/* Average Screen Time by Device */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.7 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Average Screen Time by Device</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={chartData?.deviceAverages || []} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis
+                        type="number"
+                        className="text-xs"
+                        tick={{ fill: "hsl(var(--muted-foreground))" }}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="device"
+                        className="text-xs"
+                        tick={{ fill: "hsl(var(--muted-foreground))" }}
+                      />
+                      <RechartsTooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "6px",
+                        }}
+                      />
+                      <Bar dataKey="average" fill={COLORS.tablet} radius={[0, 8, 8, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
 
-      {/* Weekly Trends */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.0 }}
-      >
-        <Card>
-          <CardHeader>
-            <CardTitle>Weekly Screen Time by Device</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={chartData?.weeklyData || []}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis
-                  dataKey="week"
-                  className="text-xs"
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
-                />
-                <YAxis
-                  className="text-xs"
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
-                  label={{ value: "Hours", angle: -90, position: "insideLeft" }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="phone"
-                  stroke={COLORS.phone}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="tablet"
-                  stroke={COLORS.tablet}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="laptop"
-                  stroke={COLORS.laptop}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="tv"
-                  stroke={COLORS.tv}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </motion.div>
+          {/* Age Group Comparative Analysis */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users2 className="h-5 w-5" />
+                  Screen Time by Age Group
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={chartData?.ageGroupChartData || []}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis
+                      dataKey="ageGroup"
+                      className="text-xs"
+                      tick={{ fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <YAxis
+                      className="text-xs"
+                      tick={{ fill: "hsl(var(--muted-foreground))" }}
+                      label={{ value: "Avg Hours", angle: -90, position: "insideLeft" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "6px",
+                      }}
+                    />
+                    <Legend />
+                    <Bar
+                      dataKey="avgScreenTime"
+                      fill={COLORS.phone}
+                      name="Total Screen Time"
+                      radius={[8, 8, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="avgEducational"
+                      fill={COLORS.educational}
+                      name="Educational"
+                      radius={[8, 8, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="avgEntertainment"
+                      fill={COLORS.entertainment}
+                      name="Entertainment"
+                      radius={[8, 8, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Device Preferences by Age Group */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Smartphone className="h-5 w-5" />
+                  Device Preferences by Age Group
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={350}>
+                  <RadarChart data={chartData?.ageDeviceData || []}>
+                    <PolarGrid className="stroke-muted" />
+                    <PolarAngleAxis
+                      dataKey="ageGroup"
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                    />
+                    <PolarRadiusAxis
+                      angle={90}
+                      domain={[0, "auto"]}
+                      tick={{ fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <Radar
+                      name="Phone"
+                      dataKey="phone"
+                      stroke={COLORS.phone}
+                      fill={COLORS.phone}
+                      fillOpacity={0.6}
+                    />
+                    <Radar
+                      name="Tablet"
+                      dataKey="tablet"
+                      stroke={COLORS.tablet}
+                      fill={COLORS.tablet}
+                      fillOpacity={0.6}
+                    />
+                    <Radar
+                      name="Laptop"
+                      dataKey="laptop"
+                      stroke={COLORS.laptop}
+                      fill={COLORS.laptop}
+                      fillOpacity={0.6}
+                    />
+                    <Radar
+                      name="TV"
+                      dataKey="tv"
+                      stroke={COLORS.tv}
+                      fill={COLORS.tv}
+                      fillOpacity={0.6}
+                    />
+                    <Legend />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "6px",
+                      }}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Weekly Trends */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.0 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Weekly Screen Time by Device</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={350}>
+                  <LineChart data={chartData?.weeklyData || []}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis
+                      dataKey="week"
+                      className="text-xs"
+                      tick={{ fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <YAxis
+                      className="text-xs"
+                      tick={{ fill: "hsl(var(--muted-foreground))" }}
+                      label={{ value: "Hours", angle: -90, position: "insideLeft" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "6px",
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="phone"
+                      stroke={COLORS.phone}
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="tablet"
+                      stroke={COLORS.tablet}
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="laptop"
+                      stroke={COLORS.laptop}
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="tv"
+                      stroke={COLORS.tv}
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </motion.div>
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
@@ -1004,7 +1192,7 @@ export default function ResearcherAnalytics() {
                 <p className="text-sm font-medium text-muted-foreground">Avg Per Day</p>
                 <p className="text-2xl font-bold">
                   {formatHoursToTime(
-                    (chartData?.dailyData.reduce((sum, d) => sum + d.total, 0) || 0) / 
+                    (chartData?.dailyData.reduce((sum, d) => sum + d.total, 0) || 0) /
                     (chartData?.dailyData.length || 1)
                   )}
                 </p>
@@ -1065,13 +1253,13 @@ export default function ResearcherAnalytics() {
                       dataKey="value"
                     >
                       {chartData?.deviceData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={Object.values(COLORS)[index % Object.values(COLORS).length]} 
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={Object.values(COLORS)[index % Object.values(COLORS).length]}
                         />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <RechartsTooltip />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -1316,6 +1504,68 @@ export default function ResearcherAnalytics() {
         <TabsContent value="insights" className="space-y-6">
           <Card>
             <CardHeader>
+              <CardTitle>Activity Heatmap</CardTitle>
+              <CardDescription>
+                Intensity of screen time activity by day of week and hour of day.
+                Darker colors indicate higher activity.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {heatmapData ? (
+                <div className="overflow-x-auto">
+                  <div className="min-w-[800px]">
+                    <div className="flex mb-2">
+                      <div className="w-12"></div>
+                      {Array.from({ length: 24 }).map((_, i) => (
+                        <div key={i} className="flex-1 text-center text-xs text-muted-foreground">
+                          {i}
+                        </div>
+                      ))}
+                    </div>
+                    {heatmapData.days.map((day, dayIndex) => (
+                      <div key={day} className="flex items-center mb-1">
+                        <div className="w-12 text-sm font-medium">{day}</div>
+                        {heatmapData.grid[dayIndex].map((minutes, hourIndex) => {
+                          const intensity = heatmapData.maxMinutes > 0 ? minutes / heatmapData.maxMinutes : 0;
+                          // Color scale from transparent/light to red
+                          // Using HSL for easier lightness manipulation
+                          // Base hue 0 (red), saturation 80%, lightness varies from 95% to 50%
+                          const lightness = 95 - (intensity * 45);
+                          const bgColor = minutes > 0 ? `hsl(0, 80%, ${lightness}%)` : 'transparent';
+
+                          return (
+                            <Tooltip key={hourIndex}>
+                              <TooltipTrigger asChild>
+                                <div
+                                  className="flex-1 h-8 mx-[1px] rounded-sm transition-colors hover:border border-transparent hover:border-black/20"
+                                  style={{ backgroundColor: bgColor }}
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-medium">{day} at {hourIndex}:00</p>
+                                <p>{Math.round(minutes)} minutes</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex items-center justify-end gap-2 text-sm text-muted-foreground">
+                    <span>Less Active</span>
+                    <div className="w-20 h-2 bg-gradient-to-r from-[hsl(0,80%,95%)] to-[hsl(0,80%,50%)] rounded-full"></div>
+                    <span>More Active</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  Loading heatmap data...
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
               <CardTitle>Key Insights & Recommendations</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1328,7 +1578,7 @@ export default function ResearcherAnalytics() {
                       <div>
                         <h4 className="font-semibold text-orange-500">High Daily Average</h4>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Average daily screen time ({formatHoursToTime(chartData.dailyData.reduce((sum, d) => sum + d.total, 0) / chartData.dailyData.length)}) 
+                          Average daily screen time ({formatHoursToTime(chartData.dailyData.reduce((sum, d) => sum + d.total, 0) / chartData.dailyData.length)})
                           exceeds recommended limits. Consider implementing time restrictions.
                         </p>
                       </div>
@@ -1341,7 +1591,7 @@ export default function ResearcherAnalytics() {
                       <div>
                         <h4 className="font-semibold text-blue-500">Low Educational Content</h4>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Only {((chartData.contentData[0]?.value / (chartData.contentData[0]?.value + chartData.contentData[1]?.value)) * 100).toFixed(0)}% 
+                          Only {((chartData.contentData[0]?.value / (chartData.contentData[0]?.value + chartData.contentData[1]?.value)) * 100).toFixed(0)}%
                           of screen time is educational. Encourage more learning-focused activities.
                         </p>
                       </div>
@@ -1395,18 +1645,18 @@ export default function ResearcherAnalytics() {
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-muted-foreground">Educational</span>
                       <span className="font-semibold text-green-500">
-                        {chartData?.contentData[0]?.value ? 
-                          ((chartData.contentData[0].value / (chartData.contentData[0].value + chartData.contentData[1].value)) * 100).toFixed(0) 
+                        {chartData?.contentData[0]?.value ?
+                          ((chartData.contentData[0].value / (chartData.contentData[0].value + chartData.contentData[1].value)) * 100).toFixed(0)
                           : 0}%
                       </span>
                     </div>
                     <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-green-500" 
-                        style={{ 
-                          width: `${chartData?.contentData[0]?.value ? 
-                            ((chartData.contentData[0].value / (chartData.contentData[0].value + chartData.contentData[1].value)) * 100) 
-                            : 0}%` 
+                      <div
+                        className="h-full bg-green-500"
+                        style={{
+                          width: `${chartData?.contentData[0]?.value ?
+                            ((chartData.contentData[0].value / (chartData.contentData[0].value + chartData.contentData[1].value)) * 100)
+                            : 0}%`
                         }}
                       />
                     </div>
@@ -1415,18 +1665,18 @@ export default function ResearcherAnalytics() {
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-muted-foreground">Entertainment</span>
                       <span className="font-semibold text-orange-500">
-                        {chartData?.contentData[1]?.value ? 
-                          ((chartData.contentData[1].value / (chartData.contentData[0].value + chartData.contentData[1].value)) * 100).toFixed(0) 
+                        {chartData?.contentData[1]?.value ?
+                          ((chartData.contentData[1].value / (chartData.contentData[0].value + chartData.contentData[1].value)) * 100).toFixed(0)
                           : 0}%
                       </span>
                     </div>
                     <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-orange-500" 
-                        style={{ 
-                          width: `${chartData?.contentData[1]?.value ? 
-                            ((chartData.contentData[1].value / (chartData.contentData[0].value + chartData.contentData[1].value)) * 100) 
-                            : 0}%` 
+                      <div
+                        className="h-full bg-orange-500"
+                        style={{
+                          width: `${chartData?.contentData[1]?.value ?
+                            ((chartData.contentData[1].value / (chartData.contentData[0].value + chartData.contentData[1].value)) * 100)
+                            : 0}%`
                         }}
                       />
                     </div>

@@ -290,23 +290,58 @@ export default function Reports() {
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Select Date</h3>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <Calendar className="h-4 w-4" />
-                    {format(selectedDate, "MMMM d, yyyy")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-card z-50" align="end">
-                  <CalendarComponent
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date) => date && setSelectedDate(date)}
-                    disabled={(date) => date > new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (!dailyStats) {
+                      toast.error('No data available for this date');
+                      return;
+                    }
+                    const csvHeaders = "Metric,Value\n";
+                    const csvRows = [
+                      `Date,${format(selectedDate, "MMMM d, yyyy")}`,
+                      `Total Screen Time (hours),${dailyStats.screenTime.toFixed(2)}`,
+                      `TV Time (hours),${dailyStats.tv.toFixed(2)}`,
+                      `Phone Time (hours),${dailyStats.phone.toFixed(2)}`,
+                      `Tablet Time (hours),${dailyStats.tablet.toFixed(2)}`,
+                      `Laptop Time (hours),${dailyStats.laptop.toFixed(2)}`,
+                    ].join('\n');
+                    const csvContent = csvHeaders + csvRows;
+                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `daily-report-${format(selectedDate, "yyyy-MM-dd")}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    toast.success('Daily report downloaded as CSV');
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download CSV
+                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="gap-2">
+                      <Calendar className="h-4 w-4" />
+                      {format(selectedDate, "MMMM d, yyyy")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-card z-50" align="end">
+                    <CalendarComponent
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => date && setSelectedDate(date)}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
           </Card>
 
@@ -473,6 +508,39 @@ export default function Reports() {
         </TabsContent>
 
         <TabsContent value="weekly" className="space-y-6">
+          <Card className="p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Weekly Report</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!weeklyStats || weeklyStats.length === 0) {
+                    toast.error('No data available for weekly report');
+                    return;
+                  }
+                  const csvHeaders = "Day,Screen Time (hours),Educational (hours),Entertainment (hours)\n";
+                  const csvRows = weeklyStats.map(day =>
+                    `${day.day},${day.screenTime.toFixed(2)},${day.educational.toFixed(2)},${day.entertainment.toFixed(2)}`
+                  ).join('\n');
+                  const csvContent = csvHeaders + csvRows;
+                  const blob = new Blob([csvContent], { type: 'text/csv' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `weekly-report-${format(new Date(), "yyyy-MM-dd")}.csv`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  toast.success('Weekly report downloaded as CSV');
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download CSV
+              </Button>
+            </div>
+          </Card>
           <div className="grid gap-4 md:grid-cols-3">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -610,7 +678,37 @@ export default function Reports() {
 
         <TabsContent value="monthly" className="space-y-6">
           <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4 text-foreground">Monthly Screen Time Trends</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground">Monthly Screen Time Trends</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!monthlyStats || monthlyStats.length === 0) {
+                    toast.error('No data available for monthly report');
+                    return;
+                  }
+                  const csvHeaders = "Month,Screen Time (hours),Educational (hours),Entertainment (hours)\n";
+                  const csvRows = monthlyStats.map((month: any) =>
+                    `${month.month},${month.screenTime.toFixed(2)},${month.educational.toFixed(2)},${month.entertainment.toFixed(2)}`
+                  ).join('\n');
+                  const csvContent = csvHeaders + csvRows;
+                  const blob = new Blob([csvContent], { type: 'text/csv' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `monthly-report-${format(new Date(), "yyyy-MM-dd")}.csv`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  toast.success('Monthly report downloaded as CSV');
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download CSV
+              </Button>
+            </div>
             {!monthlyStats || monthlyStats.length === 0 ? (
               <div className="h-[300px] flex items-center justify-center border border-dashed border-border rounded-lg">
                 <div className="text-center text-muted-foreground">
@@ -674,15 +772,65 @@ export default function Reports() {
                         <h4 className="font-semibold">Weekly Report - {format(new Date(report.report_date), "MMM d, yyyy")}</h4>
                         <p className="text-sm text-muted-foreground">
                           Status: <Badge variant={report.status === 'sent' ? 'default' : 'secondary'}>{report.status}</Badge>
+                          <span className="ml-2 text-xs">
+                            Total: {formatMinutesToTime(report.summary_json?.total_screen_time || 0)}
+                          </span>
                         </p>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          // Convert report data to CSV format
+                          const reportDate = format(new Date(report.report_date), "MMMM d, yyyy");
+                          const summary = report.summary_json || {};
+
+                          // CSV Headers
+                          const csvHeaders = "Metric,Value\n";
+
+                          // CSV Rows
+                          const csvRows = [
+                            `Report Date,${reportDate}`,
+                            `Status,${report.status}`,
+                            `Total Screen Time (minutes),${summary.total_screen_time || 0}`,
+                            `TV Time (minutes),${summary.tv_time || 0}`,
+                            `Phone Time (minutes),${summary.phone_time || 0}`,
+                            `Tablet Time (minutes),${summary.tablet_time || 0}`,
+                            `Laptop Time (minutes),${summary.laptop_time || 0}`,
+                            `Educational Time (minutes),${summary.educational_time || 0}`,
+                            `Entertainment Time (minutes),${summary.entertainment_time || 0}`,
+                          ].join('\n');
+
+                          const csvContent = csvHeaders + csvRows;
+                          const blob = new Blob([csvContent], { type: 'text/csv' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `weekly-report-${format(new Date(report.report_date), "yyyy-MM-dd")}.csv`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                          toast.success('Report downloaded as CSV');
+                        }}
+                      >
                         <Download className="h-4 w-4 mr-2" />
                         Download
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Show report details in a toast or dialog
+                          toast.info(
+                            `Weekly Report Details:\n` +
+                            `Total Screen Time: ${formatMinutesToTime(report.summary_json?.total_screen_time || 0)}\n` +
+                            `Status: ${report.status}`
+                          );
+                        }}
+                      >
                         View
                       </Button>
                     </div>

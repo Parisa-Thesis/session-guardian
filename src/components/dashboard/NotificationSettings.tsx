@@ -7,6 +7,17 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const NotificationSettings = () => {
   const {
@@ -109,8 +120,8 @@ export const NotificationSettings = () => {
                 {isGranted
                   ? "You'll receive browser notifications"
                   : !browserPermissionGranted
-                  ? "Browser permission required"
-                  : "Enable to get instant alerts"}
+                    ? "Browser permission required"
+                    : "Enable to get instant alerts"}
               </p>
             </div>
           </div>
@@ -121,27 +132,98 @@ export const NotificationSettings = () => {
 
         {/* Enable/Disable Button */}
         {!browserPermissionGranted ? (
-          <Button onClick={handleEnableNotifications} className="w-full" size="lg">
-            <Bell className="mr-2 h-4 w-4" />
-            Enable Notifications
-          </Button>
-        ) : (
-          <div className="flex gap-2">
-            {!isGranted ? (
-              <Button onClick={handleEnableNotifications} className="flex-1" size="lg">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button className="w-full" size="lg">
                 <Bell className="mr-2 h-4 w-4" />
                 Enable Notifications
               </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Enable Browser Notifications?</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2">
+                  <p>
+                    You'll receive instant alerts when:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>Your child exceeds their daily screen time limit</li>
+                    <li>Device is used during bedtime hours</li>
+                    <li>Screen time is approaching the daily limit</li>
+                  </ul>
+                  <p className="mt-3 text-sm">
+                    Your browser will ask for permission to show notifications.
+                  </p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleEnableNotifications}>
+                  Enable Notifications
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : (
+          <div className="flex gap-2">
+            {!isGranted ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button className="flex-1" size="lg">
+                    <Bell className="mr-2 h-4 w-4" />
+                    Enable Notifications
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Enable Notifications?</AlertDialogTitle>
+                    <AlertDialogDescription className="space-y-2">
+                      <p>
+                        You'll receive instant alerts when:
+                      </p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li>Your child exceeds their daily screen time limit</li>
+                        <li>Device is used during bedtime hours</li>
+                        <li>Screen time is approaching the daily limit</li>
+                      </ul>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleEnableNotifications}>
+                      Enable Notifications
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             ) : (
-              <Button
-                onClick={handleDisableNotifications}
-                variant="outline"
-                className="flex-1"
-                size="lg"
-              >
-                <BellOff className="mr-2 h-4 w-4" />
-                Disable Notifications
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    size="lg"
+                  >
+                    <BellOff className="mr-2 h-4 w-4" />
+                    Disable Notifications
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Disable Notifications?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      You will no longer receive browser notifications about your children's screen time activities.
+                      You can re-enable them at any time.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDisableNotifications} className="bg-destructive hover:bg-destructive/90">
+                      Disable Notifications
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
         )}

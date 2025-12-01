@@ -73,26 +73,56 @@ export const useNotifications = () => {
   };
 
   const requestPermission = async () => {
-    if ("Notification" in window) {
+    try {
+      if (!("Notification" in window)) {
+        toast.error("Notifications are not supported in your browser");
+        return false;
+      }
+
+      console.log("Requesting notification permission...");
       const permission = await Notification.requestPermission();
+      console.log("Permission result:", permission);
+
       if (permission === "granted") {
-        await updatePreferencesMutation.mutateAsync({ browser_enabled: true });
-        toast.success("Notifications enabled!");
-        return true;
+        try {
+          await updatePreferencesMutation.mutateAsync({ browser_enabled: true });
+          toast.success("Notifications enabled!");
+          return true;
+        } catch (error: any) {
+          console.error("Failed to save notification preference:", error);
+          toast.error(`Failed to save settings: ${error.message || "Unknown error"}`);
+          return false;
+        }
       } else if (permission === "denied") {
-        await updatePreferencesMutation.mutateAsync({ browser_enabled: false });
+        try {
+          await updatePreferencesMutation.mutateAsync({ browser_enabled: false });
+        } catch (error) {
+          console.error("Failed to save denied preference:", error);
+        }
         toast.error(
           "Notifications are currently disabled in your browser. You can enable them from this site's notification settings."
         );
         return false;
+      } else {
+        // Permission was dismissed/default
+        toast.info("Notification permission was not granted");
+        return false;
       }
+    } catch (error: any) {
+      console.error("Error requesting notification permission:", error);
+      toast.error(`Failed to request permission: ${error.message || "Unknown error"}`);
+      return false;
     }
-    return false;
   };
 
   const disableNotifications = async () => {
-    await updatePreferencesMutation.mutateAsync({ browser_enabled: false });
-    toast.success("Notifications disabled");
+    try {
+      await updatePreferencesMutation.mutateAsync({ browser_enabled: false });
+      toast.success("Notifications disabled");
+    } catch (error: any) {
+      console.error("Failed to disable notifications:", error);
+      toast.error(`Failed to disable notifications: ${error.message || "Unknown error"}`);
+    }
   };
 
   const updatePreference = async (key: string, value: boolean) => {
@@ -103,6 +133,20 @@ export const useNotifications = () => {
   const browserPermissionGranted = isSupported && Notification.permission === "granted";
   const isEnabled = preferences?.browser_enabled || false;
 
+  // Sync browser permission with DB preferences
+  useEffect(() => {
+    if (userId && browserPermissionGranted && !isLoading) {
+      if (!preferences) {
+        // If browser permission is granted but no preferences exist, create them
+        console.log("Syncing: Browser granted but no preferences found. Creating...");
+        updatePreferencesMutation.mutate({ browser_enabled: true });
+      }
+    }
+  }, [userId, browserPermissionGranted, preferences, isLoading]);
+
+  // Consider it loading if we are syncing (browser granted but no prefs yet)
+  const isSyncing = !!(userId && browserPermissionGranted && !preferences && !isLoading);
+
   return {
     sendNotification,
     requestPermission,
@@ -112,6 +156,6 @@ export const useNotifications = () => {
     isGranted: browserPermissionGranted && isEnabled,
     browserPermissionGranted,
     preferences,
-    isLoading,
+    isLoading: isLoading || isSyncing || updatePreferencesMutation.isPending,
   };
 };

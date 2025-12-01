@@ -58,7 +58,7 @@ export function AddActivityLogDialog({ onLogAdded }: AddActivityLogDialogProps) 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Fetch children for the select dropdown
-  const { data: children } = useQuery({
+  const { data: children, isLoading: isLoadingChildren } = useQuery({
     queryKey: ["children"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -75,13 +75,13 @@ export function AddActivityLogDialog({ onLogAdded }: AddActivityLogDialogProps) 
     enabled: open,
   });
 
-  // Fetch device types from device_catalog (no hardcoded options)
+  // Fetch device types from device_catalog with fallback options
   type DeviceTypeOption = {
     id: string;
     label: string;
   };
 
-  const { data: deviceTypes } = useQuery<DeviceTypeOption[]>({
+  const { data: deviceTypes, isLoading: isLoadingDevices } = useQuery<DeviceTypeOption[]>({
     queryKey: ["device-catalog-types"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -89,10 +89,21 @@ export function AddActivityLogDialog({ onLogAdded }: AddActivityLogDialogProps) 
         .select("id, device_type")
         .order("device_type");
 
-      if (error) throw error;
+      // Fallback device types if catalog is empty
+      const fallbackTypes: DeviceTypeOption[] = [
+        { id: "fallback-phone", label: "Phone" },
+        { id: "fallback-tablet", label: "Tablet" },
+        { id: "fallback-laptop", label: "Laptop" },
+        { id: "fallback-desktop", label: "Desktop" },
+        { id: "fallback-tv", label: "TV" },
+      ];
+
+      if (error || !data || data.length === 0) {
+        return fallbackTypes;
+      }
 
       const uniqueByType = new Map<string, string>();
-      (data || []).forEach((row) => {
+      data.forEach((row) => {
         if (!uniqueByType.has(row.device_type)) {
           uniqueByType.set(row.device_type, row.id);
         }
@@ -114,7 +125,7 @@ export function AddActivityLogDialog({ onLogAdded }: AddActivityLogDialogProps) 
         hoursEducational: parseFloat(formData.hoursEducational) || 0,
         hoursEntertainment: parseFloat(formData.hoursEntertainment) || 0,
       };
-      
+
       activityLogSchema.parse(validationData);
       setErrors({});
       return true;
@@ -134,7 +145,7 @@ export function AddActivityLogDialog({ onLogAdded }: AddActivityLogDialogProps) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -204,20 +215,34 @@ export function AddActivityLogDialog({ onLogAdded }: AddActivityLogDialogProps) 
             <Select
               value={formData.childId}
               onValueChange={(value) => setFormData({ ...formData, childId: value })}
+              disabled={isLoadingChildren}
             >
               <SelectTrigger className={errors.childId ? "border-destructive" : ""}>
-                <SelectValue placeholder="Select child" />
+                <SelectValue placeholder={isLoadingChildren ? "Loading children..." : "Select child"} />
               </SelectTrigger>
               <SelectContent>
-                {children?.map((child) => (
-                  <SelectItem key={child.id} value={child.id}>
-                    {child.name}
+                {isLoadingChildren ? (
+                  <SelectItem value="loading" disabled>Loading...</SelectItem>
+                ) : children && children.length > 0 ? (
+                  children.map((child) => (
+                    <SelectItem key={child.id} value={child.id}>
+                      {child.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-children" disabled>
+                    No children found. Please add a child first.
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
             {errors.childId && (
               <p className="text-sm text-destructive">{errors.childId}</p>
+            )}
+            {!isLoadingChildren && (!children || children.length === 0) && (
+              <p className="text-sm text-amber-600">
+                ⚠️ You need to add a child before logging activities.
+              </p>
             )}
           </div>
 
@@ -306,16 +331,21 @@ export function AddActivityLogDialog({ onLogAdded }: AddActivityLogDialogProps) 
             <Select
               value={formData.deviceType}
               onValueChange={(value) => setFormData({ ...formData, deviceType: value })}
+              disabled={isLoadingDevices}
             >
               <SelectTrigger className={errors.deviceType ? "border-destructive" : ""}>
-                <SelectValue placeholder="Select device type" />
+                <SelectValue placeholder={isLoadingDevices ? "Loading devices..." : "Select device type"} />
               </SelectTrigger>
               <SelectContent>
-                {deviceTypes?.map((option) => (
-                  <SelectItem key={option.id} value={option.label}>
-                    {option.label}
-                  </SelectItem>
-                ))}
+                {isLoadingDevices ? (
+                  <SelectItem value="loading" disabled>Loading...</SelectItem>
+                ) : (
+                  deviceTypes?.map((option) => (
+                    <SelectItem key={option.id} value={option.label}>
+                      {option.label}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
             {errors.deviceType && (

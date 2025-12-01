@@ -188,7 +188,45 @@
     "logout": "Logout",
     "duration": "Duration",
     "device": "Device",
-    "active": "Active"
+    "active": "Active",
+    "cohorts": {
+      "title": "Cohort Management",
+      "subtitle": "Group participants for comparative analysis",
+      "create": "Create Cohort",
+      "createTitle": "Create New Cohort",
+      "nameLabel": "Cohort Name",
+      "namePlaceholder": "e.g., Control Group A",
+      "descLabel": "Description (Optional)",
+      "descPlaceholder": "Description of this cohort...",
+      "manageMembers": "Manage Members",
+      "members": "Members",
+      "noCohorts": "No cohorts created yet. Create one to start grouping participants."
+    },
+    "analyticsFilters": {
+      "ageGroup": "Filter by Age Group",
+      "cohort": "Filter by Cohort",
+      "parent": "Filter by Parent",
+      "allAges": "All Ages",
+      "allCohorts": "All Cohorts",
+      "allParents": "All Parents",
+      "searchChild": "Search by child name or ID..."
+    },
+    "analyticsTitle": "Analytics & Reports",
+    "analyticsSubtitle": "Comprehensive data analysis and insights",
+    "heatmap": {
+      "title": "Activity Heatmap",
+      "lessActive": "Less Active",
+      "moreActive": "More Active",
+      "minutes": "minutes"
+    },
+    "export": {
+      "button": "Export Data",
+      "title": "Export Data",
+      "description": "Download analytics data for further analysis.",
+      "format": "Export Format",
+      "columns": "Select Columns",
+      "download": "Download"
+    }
   },
   "admin": {
     "dashboard": "Admin Dashboard",

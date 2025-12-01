@@ -37,6 +37,8 @@ import ResearcherParticipants from "./pages/dashboard/researcher/Participants";
 import SubjectLocation from "./pages/dashboard/researcher/SubjectLocation";
 import ResearcherConsentRequests from "./pages/dashboard/researcher/ConsentRequests";
 import ResearcherSessionLogs from "./pages/dashboard/researcher/SessionLogs";
+import ResearcherReports from "./pages/dashboard/researcher/Reports";
+import Cohorts from "./pages/dashboard/researcher/Cohorts";
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
 import AdminConsentManagement from "./pages/dashboard/admin/ConsentManagement";
 
@@ -110,6 +112,8 @@ const App = () => (
             <Route path="participants/:childId/location" element={<SubjectLocation />} />
             <Route path="consents" element={<ResearcherConsentRequests />} />
             <Route path="session-logs" element={<ResearcherSessionLogs />} />
+            <Route path="reports" element={<ResearcherReports />} />
+            <Route path="cohorts" element={<Cohorts />} />
           </Route>
 
           {/* Admin Dashboard */}

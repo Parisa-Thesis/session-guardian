@@ -12,11 +12,22 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { TaskSelector } from "@/components/dashboard/TaskSelector";
 
 export default function TasksPage() {
     const { data: parentData, isLoading: isLoadingParent } = useParentData();
     const [selectedChildId, setSelectedChildId] = useState<string>("");
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [editingTask, setEditingTask] = useState<any>(null);
+    const [newTask, setNewTask] = useState({
+        title: "",
+        description: "",
+        reward_minutes: 15,
+        is_recurring: false
+    });
 
     // Auto-select first child
     if (parentData?.children?.length && !selectedChildId) {
@@ -24,6 +35,32 @@ export default function TasksPage() {
     }
 
     const { tasks, completions, isLoading, createTask, approveCompletion } = useTaskData(selectedChildId);
+
+    const handleEditTask = async () => {
+        if (!editingTask?.id) return;
+
+        try {
+            const { error } = await supabase
+                .from("tasks")
+                .update({
+                    title: editingTask.title,
+                    description: editingTask.description,
+                    reward_minutes: editingTask.reward_minutes,
+                })
+                .eq("id", editingTask.id);
+
+            if (error) throw error;
+
+            toast.success("Task updated successfully!");
+            setIsEditOpen(false);
+            setEditingTask(null);
+            // Refresh tasks
+            window.location.reload();
+        } catch (error: any) {
+            console.error("Failed to update task:", error);
+            toast.error("Failed to update task: " + error.message);
+        }
+    };
 
     if (isLoadingParent || (selectedChildId && isLoading)) {
         return (
@@ -71,24 +108,68 @@ export default function TasksPage() {
                                 <DialogDescription>Add a new chore or educational activity.</DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">
+
+
                                 <div className="grid gap-2">
                                     <Label htmlFor="title">Task Title</Label>
-                                    <Input id="title" placeholder="e.g., Read for 30 mins" />
+                                    <TaskSelector
+                                        onSelect={(task) => setNewTask({
+                                            ...newTask,
+                                            title: task.title,
+                                            description: task.description || newTask.description,
+                                            reward_minutes: task.reward || newTask.reward_minutes
+                                        })}
+                                    />
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="desc">Description</Label>
-                                    <Textarea id="desc" placeholder="Details about the task..." />
+                                    <Textarea
+                                        id="desc"
+                                        placeholder="Details about the task..."
+                                        value={newTask.description}
+                                        onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                                    />
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="reward">Reward (Minutes)</Label>
-                                    <Input id="reward" type="number" placeholder="15" />
+                                    <Input
+                                        id="reward"
+                                        type="number"
+                                        placeholder="15"
+                                        value={newTask.reward_minutes}
+                                        onChange={(e) => setNewTask({ ...newTask, reward_minutes: parseInt(e.target.value) || 0 })}
+                                    />
                                 </div>
                             </div>
                             <DialogFooter>
-                                <Button onClick={() => {
-                                    createTask.mutate({});
-                                    setIsCreateOpen(false);
-                                }}>Create Task</Button>
+                                <Button
+                                    onClick={async () => {
+                                        if (!newTask.title || !newTask.reward_minutes) return;
+
+                                        // Check if template exists, if not create it
+                                        const { data: existing } = await supabase
+                                            .from('task_templates')
+                                            .select('id')
+                                            .eq('title', newTask.title)
+                                            .maybeSingle();
+
+                                        if (!existing) {
+                                            await supabase.from('task_templates').insert({
+                                                title: newTask.title,
+                                                description: newTask.description,
+                                                default_reward_minutes: newTask.reward_minutes,
+                                                created_by: (await supabase.auth.getUser()).data.user?.id
+                                            });
+                                        }
+
+                                        createTask.mutate(newTask);
+                                        setIsCreateOpen(false);
+                                        setNewTask({ title: "", description: "", reward_minutes: 15, is_recurring: false });
+                                    }}
+                                    disabled={!newTask.title || !newTask.reward_minutes}
+                                >
+                                    Create Task
+                                </Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
@@ -167,7 +248,16 @@ export default function TasksPage() {
                                         <Badge variant={task.is_recurring ? "secondary" : "outline"}>
                                             {task.is_recurring ? "Recurring" : "One-time"}
                                         </Badge>
-                                        <Button variant="ghost" size="sm">Edit</Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                setEditingTask(task);
+                                                setIsEditOpen(true);
+                                            }}
+                                        >
+                                            Edit
+                                        </Button>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -175,6 +265,54 @@ export default function TasksPage() {
                     </div>
                 </TabsContent>
             </Tabs>
+
+            {/* Edit Task Dialog */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit Task</DialogTitle>
+                        <DialogDescription>Update the task details.</DialogDescription>
+                    </DialogHeader>
+                    {editingTask && (
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit-title">Task Title</Label>
+                                <Input
+                                    id="edit-title"
+                                    value={editingTask.title}
+                                    onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit-desc">Description</Label>
+                                <Textarea
+                                    id="edit-desc"
+                                    value={editingTask.description || ""}
+                                    onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="edit-reward">Reward (Minutes)</Label>
+                                <Input
+                                    id="edit-reward"
+                                    type="number"
+                                    min="1"
+                                    value={editingTask.reward_minutes}
+                                    onChange={(e) => setEditingTask({ ...editingTask, reward_minutes: parseInt(e.target.value) || 0 })}
+                                />
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleEditTask}>
+                            Save Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

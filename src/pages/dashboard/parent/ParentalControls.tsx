@@ -1,229 +1,423 @@
-import { Card } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Clock, Moon, Shield, CheckCircle, Bell } from "lucide-react";
-import ParentalControlDialog from "@/components/dashboard/ParentalControlDialog";
-import { useSessionMonitoring } from "@/hooks/useSessionMonitoring";
-import { motion } from "framer-motion";
+import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ActivityDashboard } from "@/components/parental-controls/ActivityDashboard";
+import { QuickActions } from "@/components/parental-controls/QuickActions";
+import { ScreenTimeLimitCard } from "@/components/parental-controls/ScreenTimeLimitCard";
+import { ScheduleManager } from "@/components/parental-controls/ScheduleManager";
+import { AppControlsList } from "@/components/parental-controls/AppControlsList";
+import { ActivityTimeline } from "@/components/parental-controls/ActivityTimeline";
+import { subDays, startOfDay, endOfDay } from "date-fns";
 
 export default function ParentalControls() {
-  const { data: children, isLoading: isLoadingChildren } = useQuery({
+  const [selectedChildId, setSelectedChildId] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const queryClient = useQueryClient();
+
+  // Fetch children
+  const { data: children } = useQuery({
     queryKey: ["children"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("children")
         .select("*")
         .eq("parent_id", user.id);
-
-      if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
-  const { data: controlsData, isLoading: isLoadingControls } = useQuery({
-    queryKey: ["all-parental-controls"],
+  // Auto-select first child
+  if (children && children.length > 0 && !selectedChildId) {
+    setSelectedChildId(children[0].id);
+  }
+
+  const selectedChild = children?.find(c => c.id === selectedChildId);
+
+  // Fetch parental controls
+  const { data: control } = useQuery({
+    queryKey: ["parental-control", selectedChildId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("parental_controls")
+        .select("*")
+        .eq("child_id", selectedChildId)
+        .single();
+      return data;
+    },
+    enabled: !!selectedChildId,
+  });
+
+  // Fetch today's screen time
+  const { data: todayScreenTime } = useQuery({
+    queryKey: ["today-screen-time", selectedChildId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("parental_controls")
-        .select("*");
-
+        .rpc('get_today_screen_time', { p_child_id: selectedChildId });
       if (error) throw error;
+      return data || 0;
+    },
+    enabled: !!selectedChildId,
+  });
+
+  // Fetch weekly screen time
+  const { data: weeklyScreenTime } = useQuery({
+    queryKey: ["weekly-screen-time", selectedChildId],
+    queryFn: async () => {
+      const startDate = startOfDay(subDays(new Date(), 7));
+      const endDate = endOfDay(new Date());
+
+      const { data } = await supabase
+        .from("activity_timeline")
+        .select("duration_minutes")
+        .eq("child_id", selectedChildId)
+        .gte("start_time", startDate.toISOString())
+        .lte("start_time", endDate.toISOString());
+
+      return data?.reduce((sum, a) => sum + a.duration_minutes, 0) || 0;
+    },
+    enabled: !!selectedChildId,
+  });
+
+  // Fetch current activity
+  const { data: currentActivity } = useQuery({
+    queryKey: ["current-activity", selectedChildId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("activity_timeline")
+        .select("*")
+        .eq("child_id", selectedChildId)
+        .is("end_time", null)
+        .order("start_time", { ascending: false })
+        .limit(1)
+        .single();
       return data;
+    },
+    enabled: !!selectedChildId,
+    refetchInterval: 10000, // Refresh every 10 seconds
+  });
+
+  // Fetch active instant action
+  const { data: activeAction } = useQuery({
+    queryKey: ["active-action", selectedChildId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .rpc('get_active_instant_action', { p_child_id: selectedChildId });
+      return data?.[0];
+    },
+    enabled: !!selectedChildId,
+  });
+
+  // Fetch schedules
+  const { data: schedules } = useQuery({
+    queryKey: ["schedules", selectedChildId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("schedules")
+        .select("*")
+        .eq("child_id", selectedChildId)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!selectedChildId,
+  });
+
+  // Fetch app controls
+  const { data: appControls } = useQuery({
+    queryKey: ["app-controls", selectedChildId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("app_controls")
+        .select("*")
+        .eq("child_id", selectedChildId)
+        .order("app_name");
+      return data || [];
+    },
+    enabled: !!selectedChildId,
+  });
+
+  // Fetch activity timeline
+  const { data: activities } = useQuery({
+    queryKey: ["activity-timeline", selectedChildId, selectedDate],
+    queryFn: async () => {
+      const startDate = startOfDay(selectedDate);
+      const endDate = endOfDay(selectedDate);
+
+      const { data } = await supabase
+        .from("activity_timeline")
+        .select("*")
+        .eq("child_id", selectedChildId)
+        .gte("start_time", startDate.toISOString())
+        .lte("start_time", endDate.toISOString())
+        .order("start_time");
+      return data || [];
+    },
+    enabled: !!selectedChildId,
+  });
+
+  // Mutations
+  const pauseDevice = useMutation({
+    mutationFn: async ({ childId, reason }: { childId: string; reason?: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("instant_actions")
+        .insert({
+          child_id: childId,
+          parent_id: user.id,
+          action_type: "pause",
+          reason,
+          is_active: true,
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("All devices paused");
+      queryClient.invalidateQueries({ queryKey: ["active-action"] });
+    },
+    onError: (error: any) => {
+      toast.error("Failed to pause devices: " + error.message);
     },
   });
 
-  const { data: monitoring } = useSessionMonitoring();
+  const unlockDevice = useMutation({
+    mutationFn: async (childId: string) => {
+      const { error } = await supabase
+        .from("instant_actions")
+        .update({ is_active: false })
+        .eq("child_id", childId)
+        .eq("action_type", "pause")
+        .eq("is_active", true);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("All devices unlocked");
+      queryClient.invalidateQueries({ queryKey: ["active-action"] });
+    },
+    onError: (error: any) => {
+      toast.error("Failed to unlock devices: " + error.message);
+    },
+  });
 
-  if (isLoadingChildren || isLoadingControls) {
+  const grantTime = useMutation({
+    mutationFn: async ({ childId, minutes, reason }: { childId: string; minutes: number; reason?: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + minutes);
+
+      const { error } = await supabase
+        .from("instant_actions")
+        .insert({
+          child_id: childId,
+          parent_id: user.id,
+          action_type: "grant_time",
+          duration_minutes: minutes,
+          reason,
+          expires_at: expiresAt.toISOString(),
+          is_active: true,
+        });
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      toast.success(`Granted ${variables.minutes} minutes of extra time`);
+      queryClient.invalidateQueries({ queryKey: ["active-action"] });
+    },
+    onError: (error: any) => {
+      toast.error("Failed to grant time: " + error.message);
+    },
+  });
+
+  const updateDailyLimit = useMutation({
+    mutationFn: async (minutes: number) => {
+      const { error } = await supabase
+        .from("parental_controls")
+        .upsert({
+          child_id: selectedChildId,
+          daily_time_limit_minutes: minutes,
+          enabled: true,
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Daily limit updated");
+      queryClient.invalidateQueries({ queryKey: ["parental-control"] });
+    },
+    onError: (error: any) => {
+      toast.error("Failed to update limit: " + error.message);
+    },
+  });
+
+  const addSchedule = useMutation({
+    mutationFn: async (schedule: any) => {
+      const { error } = await supabase
+        .from("schedules")
+        .insert({ ...schedule, child_id: selectedChildId });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Schedule added");
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+    },
+  });
+
+  const updateSchedule = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      const { error } = await supabase
+        .from("schedules")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Schedule updated");
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+    },
+  });
+
+  const deleteSchedule = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("schedules")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Schedule deleted");
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+    },
+  });
+
+  const addApp = useMutation({
+    mutationFn: async (app: any) => {
+      const { error } = await supabase
+        .from("app_controls")
+        .insert({ ...app, child_id: selectedChildId });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("App added");
+      queryClient.invalidateQueries({ queryKey: ["app-controls"] });
+    },
+  });
+
+  const updateApp = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      const { error } = await supabase
+        .from("app_controls")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["app-controls"] });
+    },
+  });
+
+  if (!children || children.length === 0) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-64 w-full" />
+      <div className="p-8 text-center">
+        <h1 className="text-2xl font-bold mb-2">No Children Added</h1>
+        <p className="text-muted-foreground">Add a child profile to start using parental controls.</p>
       </div>
     );
   }
 
-  const activeWarnings = monitoring?.warnings || [];
-  const errorWarnings = activeWarnings.filter((w) => w.severity === "error");
-  const cautionWarnings = activeWarnings.filter((w) => w.severity === "warning");
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Parental Controls</h1>
-        <p className="text-muted-foreground mt-2">
-          Set daily time limits and bedtime restrictions for your children
-        </p>
-      </div>
-
-      {/* Active Warnings */}
-      {activeWarnings.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-xl font-semibold flex items-center gap-2 text-foreground">
-            <Bell className="h-5 w-5" />
-            Active Alerts
-          </h2>
-          {errorWarnings.map((warning, index) => (
-            <motion.div
-              key={`error-${index}`}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-            >
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>{warning.childName}:</strong> {warning.message}
-                </AlertDescription>
-              </Alert>
-            </motion.div>
-          ))}
-          {cautionWarnings.map((warning, index) => (
-            <motion.div
-              key={`warning-${index}`}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: (errorWarnings.length + index) * 0.1 }}
-            >
-              <Alert className="border-orange-500/20 bg-orange-500/10">
-                <Clock className="h-4 w-4 text-orange-500" />
-                <AlertDescription className="text-foreground">
-                  <strong>{warning.childName}:</strong> {warning.message}
-                </AlertDescription>
-              </Alert>
-            </motion.div>
-          ))}
+    <div className="space-y-6 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Parental Controls</h1>
+          <p className="text-muted-foreground">Monitor and manage your child's screen time</p>
         </div>
-      )}
-
-      {/* Summary Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="p-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-primary/10">
-              <Shield className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Children</p>
-              <p className="text-2xl font-bold text-foreground">{children?.length || 0}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-green-500/10">
-              <CheckCircle className="h-6 w-6 text-green-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Controls Enabled</p>
-              <p className="text-2xl font-bold text-foreground">
-                {controlsData?.filter((c) => c.enabled).length || 0}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-orange-500/10">
-              <AlertTriangle className="h-6 w-6 text-orange-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Active Alerts</p>
-              <p className="text-2xl font-bold text-foreground">{activeWarnings.length}</p>
-            </div>
-          </div>
-        </Card>
+        <Select value={selectedChildId} onValueChange={setSelectedChildId}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Select child" />
+          </SelectTrigger>
+          <SelectContent>
+            {children.map((child) => (
+              <SelectItem key={child.id} value={child.id}>
+                {child.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Children Controls */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4 text-foreground">Manage Controls</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          {children?.map((child, index) => {
-            const control = controlsData?.find((c) => c.child_id === child.id);
-            const childWarnings = activeWarnings.filter((w) => w.childId === child.id);
+      {selectedChild && (
+        <>
+          {/* Dashboard */}
+          <ActivityDashboard
+            childName={selectedChild.name}
+            currentApp={currentActivity?.app_name || null}
+            isActive={!!currentActivity}
+            todayMinutes={todayScreenTime || 0}
+            dailyLimitMinutes={control?.daily_time_limit_minutes || 180}
+            weeklyMinutes={weeklyScreenTime || 0}
+            weeklyChange={0}
+          />
 
-            return (
-              <motion.div
-                key={child.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-              >
-                <Card className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground">{child.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Age Group: {child.age_group || "Not set"}
-                      </p>
-                    </div>
-                    <Badge variant={control?.enabled ? "default" : "secondary"}>
-                      {control?.enabled ? "Enabled" : "Disabled"}
-                    </Badge>
-                  </div>
+          {/* Quick Actions */}
+          <QuickActions
+            childId={selectedChildId}
+            childName={selectedChild.name}
+            onPauseDevice={(id, reason) => pauseDevice.mutateAsync({ childId: id, reason })}
+            onUnlockDevice={(id) => unlockDevice.mutateAsync(id)}
+            onGrantTime={(id, minutes, reason) => grantTime.mutateAsync({ childId: id, minutes, reason })}
+            isPaused={activeAction?.action_type === 'pause'}
+          />
 
-                  {childWarnings.length > 0 && (
-                    <div className="mb-3 p-2 rounded-md bg-orange-500/10 border border-orange-500/20">
-                      <p className="text-sm font-medium text-orange-500 flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4" />
-                        {childWarnings.length} active alert{childWarnings.length > 1 ? "s" : ""}
-                      </p>
-                    </div>
-                  )}
+          {/* Tabs */}
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="apps">Apps</TabsTrigger>
+              <TabsTrigger value="schedules">Schedules</TabsTrigger>
+              <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            </TabsList>
 
-                  <div className="space-y-2 mb-4 text-sm">
-                    {control?.daily_time_limit_minutes ? (
-                      <div className="flex items-center gap-2 text-foreground">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>Daily Limit: {control.daily_time_limit_minutes} minutes</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>No daily limit set</span>
-                      </div>
-                    )}
+            <TabsContent value="overview" className="space-y-6">
+              <ScreenTimeLimitCard
+                dailyLimitMinutes={control?.daily_time_limit_minutes || 180}
+                todayMinutes={todayScreenTime || 0}
+                onUpdateLimit={(minutes) => updateDailyLimit.mutateAsync(minutes)}
+              />
+            </TabsContent>
 
-                    {control?.bedtime_start && control?.bedtime_end ? (
-                      <div className="flex items-center gap-2 text-foreground">
-                        <Moon className="h-4 w-4 text-muted-foreground" />
-                        <span>
-                          Bedtime: {control.bedtime_start} - {control.bedtime_end}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Moon className="h-4 w-4" />
-                        <span>No bedtime restrictions</span>
-                      </div>
-                    )}
-                  </div>
+            <TabsContent value="apps">
+              <AppControlsList
+                appControls={appControls || []}
+                onUpdateApp={(id, updates) => updateApp.mutateAsync({ id, updates })}
+                onAddApp={(app) => addApp.mutateAsync(app)}
+              />
+            </TabsContent>
 
-                  <ParentalControlDialog childId={child.id} childName={child.name} />
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
+            <TabsContent value="schedules">
+              <ScheduleManager
+                schedules={schedules || []}
+                availableApps={appControls || []}
+                onAddSchedule={(schedule) => addSchedule.mutateAsync(schedule)}
+                onUpdateSchedule={(id, updates) => updateSchedule.mutateAsync({ id, updates })}
+                onDeleteSchedule={(id) => deleteSchedule.mutateAsync(id)}
+              />
+            </TabsContent>
 
-      {!children || children.length === 0 && (
-        <Card className="p-12 text-center">
-          <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2 text-foreground">No Children Added</h3>
-          <p className="text-muted-foreground">
-            Add children profiles first to set up parental controls.
-          </p>
-        </Card>
+            <TabsContent value="timeline">
+              <ActivityTimeline
+                activities={activities || []}
+                selectedDate={selectedDate}
+              />
+            </TabsContent>
+          </Tabs>
+        </>
       )}
     </div>
   );
