@@ -9,9 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, History } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Sessions = () => {
   const { data: parentData, isLoading } = useParentData();
+  const [ageFilter, setAgeFilter] = useState<string>("all");
 
   // Fetch all sessions (both active and completed)
   const { data: allSessions, isLoading: sessionsLoading } = useQuery({
@@ -43,7 +46,13 @@ const Sessions = () => {
   }
 
   const activeSessions = parentData?.activeSessions || [];
-  const completedSessions = allSessions?.filter((s) => s.end_time) || [];
+  const completedSessions = allSessions?.filter((s) => {
+    const isCompleted = !!s.end_time;
+    const matchesAge = ageFilter === "all" || (s.children as any)?.age_group === ageFilter;
+    return isCompleted && matchesAge;
+  }) || [];
+
+  const ageGroups = ["0-2", "3-5", "6-8", "9-11", "12-14", "15-17", "18+"];
 
   const formatDuration = (minutes: number | null) => {
     if (!minutes) return "—";
@@ -88,20 +97,37 @@ const Sessions = () => {
 
         <TabsContent value="history">
           <Card>
-            <CardHeader>
-              <CardTitle>Session History</CardTitle>
-              <CardDescription>
-                Complete log of all screen time sessions
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Session History</CardTitle>
+                <CardDescription>
+                  Complete log of all screen time sessions
+                </CardDescription>
+              </div>
+              <div className="w-[180px]">
+                <Select value={ageFilter} onValueChange={setAgeFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by age" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Ages</SelectItem>
+                    {ageGroups.map((age) => (
+                      <SelectItem key={age} value={age}>
+                        {age} years
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
             <CardContent>
               {completedSessions.length === 0 ? (
                 <div className="text-center py-12">
                   <History className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No completed sessions yet</p>
+                  <p className="text-muted-foreground">No completed sessions found</p>
                 </div>
               ) : (
-                  <Table>
+                <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Child</TableHead>
@@ -120,6 +146,9 @@ const Sessions = () => {
                       <TableRow key={session.id}>
                         <TableCell className="font-medium">
                           {session.children?.name}
+                          <div className="text-xs text-muted-foreground">
+                            {session.children?.age_group}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
@@ -130,7 +159,7 @@ const Sessions = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge 
+                          <Badge
                             variant={session.session_type === "manual" ? "default" : "secondary"}
                             className="capitalize"
                           >

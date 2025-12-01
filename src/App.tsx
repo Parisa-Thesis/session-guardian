@@ -24,6 +24,8 @@ import ParentalControls from "./pages/dashboard/parent/ParentalControls";
 import Reports from "./pages/dashboard/parent/Reports";
 import Consents from "./pages/dashboard/parent/Consents";
 import Sessions from "./pages/dashboard/parent/Sessions";
+import TasksPage from "./pages/dashboard/parent/Tasks";
+import LocationPage from "./pages/dashboard/parent/Location";
 import Charts from "./pages/dashboard/parent/Charts";
 import DeviceIntegration from "./pages/dashboard/parent/DeviceIntegration";
 
@@ -32,6 +34,7 @@ import ResearcherDashboard from "./pages/dashboard/researcher/ResearcherDashboar
 import ResearcherData from "./pages/dashboard/researcher/Data";
 import ResearcherAnalytics from "./pages/dashboard/researcher/Analytics";
 import ResearcherParticipants from "./pages/dashboard/researcher/Participants";
+import SubjectLocation from "./pages/dashboard/researcher/SubjectLocation";
 import ResearcherConsentRequests from "./pages/dashboard/researcher/ConsentRequests";
 import ResearcherSessionLogs from "./pages/dashboard/researcher/SessionLogs";
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
@@ -85,6 +88,8 @@ const App = () => (
             <Route path="reports" element={<Reports />} />
             <Route path="consents" element={<Consents />} />
             <Route path="sessions" element={<Sessions />} />
+            <Route path="tasks" element={<TasksPage />} />
+            <Route path="location" element={<LocationPage />} />
             <Route path="charts" element={<Charts />} />
             <Route path="device-integration" element={<DeviceIntegration />} />
           </Route>
@@ -102,6 +107,7 @@ const App = () => (
             <Route path="data" element={<ResearcherData />} />
             <Route path="analytics" element={<ResearcherAnalytics />} />
             <Route path="participants" element={<ResearcherParticipants />} />
+            <Route path="participants/:childId/location" element={<SubjectLocation />} />
             <Route path="consents" element={<ResearcherConsentRequests />} />
             <Route path="session-logs" element={<ResearcherSessionLogs />} />
           </Route>

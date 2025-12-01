@@ -1,11 +1,11 @@
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWeeklyStats } from "@/hooks/useWeeklyStats";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { subMonths, subDays, format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
-import { Clock, BookOpen, Tv, TrendingUp, TrendingDown, Calendar } from "lucide-react";
+import { Clock, BookOpen, Tv, TrendingUp, TrendingDown, Calendar, Mail, FileText, Download, CheckCircle, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { formatMinutesToTime, minutesToHours } from "@/lib/timeUtils";
@@ -13,10 +13,87 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useState } from "react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { useWeeklyReport } from "@/hooks/useWeeklyReport";
+import { Badge } from "@/components/ui/badge";
+import { Users } from "lucide-react";
+
+const PeerComparisonCard = ({ totalWeeklyScreenTime }: { totalWeeklyScreenTime: number }) => {
+  const { data: peerAverage, isLoading } = useQuery({
+    queryKey: ["peer-average"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      // Get the first child's age group for now (simplified)
+      const { data: children } = await supabase
+        .from("children")
+        .select("age_group")
+        .eq("parent_id", user.id)
+        .limit(1)
+        .single();
+
+      if (!children?.age_group) return null;
+
+      const endDate = new Date();
+      const startDate = subDays(endDate, 7);
+
+      const { data, error } = await supabase
+        .rpc('get_age_group_averages', {
+          age_group_param: children.age_group,
+          start_date: format(startDate, 'yyyy-MM-dd'),
+          end_date: format(endDate, 'yyyy-MM-dd')
+        });
+
+      if (error) {
+        console.error("Error fetching peer average:", error);
+        return null;
+      }
+
+      return data; // Returns average minutes
+    }
+  });
+
+  if (isLoading || peerAverage === null) return null;
+
+  const averageHours = (peerAverage as number) / 60;
+  const difference = totalWeeklyScreenTime - averageHours;
+  const percentage = averageHours > 0 ? (difference / averageHours) * 100 : 0;
+  const isLower = difference < 0;
+
+  return (
+    <Card className="p-6">
+      <div className="flex items-center gap-4">
+        <div className="p-3 rounded-full bg-indigo-500/10 text-indigo-500">
+          <Users className="h-6 w-6" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-foreground">Peer Comparison</h3>
+          <p className="text-sm text-muted-foreground">
+            Compared to other children in the same age group
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-2xl font-bold text-foreground">
+              {Math.abs(percentage).toFixed(0)}% {isLower ? "lower" : "higher"}
+            </span>
+            <span className="text-sm text-muted-foreground">than average</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Your child: {formatMinutesToTime(Math.round(totalWeeklyScreenTime * 60))} vs Peer Average: {formatMinutesToTime(Math.round(peerAverage as number))}
+          </p>
+        </div>
+      </div>
+    </Card>
+  );
+};
 
 export default function Reports() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { data: weeklyStats, isLoading: isLoadingWeekly } = useWeeklyStats();
+  const { reports, isLoading: isLoadingReports, generateReport } = useWeeklyReport();
+  const queryClient = useQueryClient();
 
   // Fetch daily stats for selected date from screen_sessions
   const { data: dailyStats, isLoading: isLoadingDaily } = useQuery({
@@ -52,9 +129,9 @@ export default function Reports() {
       const dayData = sessions.reduce((acc: any, session: any) => {
         const minutes = session.duration_minutes || 0;
         const deviceType = session.devices?.device_type?.toLowerCase() || 'other';
-        
+
         acc.screenTime += minutes;
-        
+
         if (deviceType.includes('tv')) {
           acc.tv += minutes;
         } else if (deviceType.includes('phone')) {
@@ -64,7 +141,7 @@ export default function Reports() {
         } else if (deviceType.includes('laptop')) {
           acc.laptop += minutes;
         }
-        
+
         return acc;
       }, {
         screenTime: 0,
@@ -121,6 +198,41 @@ export default function Reports() {
     },
   });
 
+  const { data: preferences, isLoading: isLoadingPreferences } = useQuery({
+    queryKey: ["notification-preferences"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase
+        .from("notification_preferences")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+      return data;
+    }
+  });
+
+  const updatePreferences = useMutation({
+    mutationFn: async (emailWeekly: boolean) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("notification_preferences")
+        .update({ email_weekly_report: emailWeekly })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
+      toast.success("Preferences updated successfully");
+    },
+    onError: () => {
+      toast.error("Failed to update preferences");
+    }
+  });
+
   const calculateTrend = (data: any[]) => {
     if (!data || data.length < 2) return { value: 0, isPositive: false };
     const latest = data[data.length - 1]?.screenTime || 0;
@@ -132,7 +244,7 @@ export default function Reports() {
   const weeklyTrend = calculateTrend(weeklyStats || []);
   const monthlyTrend = calculateTrend(monthlyStats || []);
 
-  if (isLoadingWeekly || isLoadingMonthly || isLoadingDaily) {
+  if (isLoadingWeekly || isLoadingMonthly || isLoadingDaily || isLoadingPreferences) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-64" />
@@ -147,11 +259,22 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Screen Time Reports</h1>
-        <p className="text-muted-foreground mt-2">
-          View weekly and monthly screen time patterns with insights
-        </p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Screen Time Reports</h1>
+          <p className="text-muted-foreground mt-2">
+            View weekly and monthly screen time patterns with insights
+          </p>
+        </div>
+        <div className="flex items-center space-x-2 bg-card p-3 rounded-lg border">
+          <Mail className="h-4 w-4 text-muted-foreground" />
+          <Label htmlFor="email-reports" className="text-sm font-medium">Email Weekly Reports</Label>
+          <Switch
+            id="email-reports"
+            checked={preferences?.email_weekly_report || false}
+            onCheckedChange={(checked) => updatePreferences.mutate(checked)}
+          />
+        </div>
       </div>
 
       <Tabs defaultValue="daily" className="space-y-6">
@@ -159,6 +282,7 @@ export default function Reports() {
           <TabsTrigger value="daily">Daily Report</TabsTrigger>
           <TabsTrigger value="weekly">Weekly Report</TabsTrigger>
           <TabsTrigger value="monthly">Monthly Report</TabsTrigger>
+          <TabsTrigger value="history">Past Reports</TabsTrigger>
         </TabsList>
 
         <TabsContent value="daily" className="space-y-6">
@@ -311,7 +435,7 @@ export default function Reports() {
               {dailyStats && dailyStats.screenTime > 3 && (
                 <p className="flex items-start gap-2">
                   <span className="text-orange-500">⚠️</span>
-                   <span className="text-foreground">
+                  <span className="text-foreground">
                     Screen time on {format(selectedDate, "MMMM d")} ({formatMinutesToTime(Math.round(dailyStats.screenTime * 60))}) is above recommended daily limits.
                   </span>
                 </p>
@@ -338,8 +462,8 @@ export default function Reports() {
                   <span className="text-foreground">
                     Most used device: {
                       dailyStats.tv >= Math.max(dailyStats.phone, dailyStats.tablet, dailyStats.laptop) ? 'TV' :
-                      dailyStats.phone >= Math.max(dailyStats.tv, dailyStats.tablet, dailyStats.laptop) ? 'Phone' :
-                      dailyStats.tablet >= Math.max(dailyStats.tv, dailyStats.phone, dailyStats.laptop) ? 'Tablet' : 'Laptop'
+                        dailyStats.phone >= Math.max(dailyStats.tv, dailyStats.tablet, dailyStats.laptop) ? 'Phone' :
+                          dailyStats.tablet >= Math.max(dailyStats.tv, dailyStats.phone, dailyStats.laptop) ? 'Tablet' : 'Laptop'
                     }
                   </span>
                 </p>
@@ -451,6 +575,8 @@ export default function Reports() {
             )}
           </Card>
 
+          <PeerComparisonCard totalWeeklyScreenTime={totalWeeklyScreenTime} />
+
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4 text-foreground">Recommendations</h3>
             <ul className="space-y-3">
@@ -521,10 +647,54 @@ export default function Reports() {
               <p>
                 Track long-term trends to understand seasonal patterns in your children's screen time usage.
               </p>
-              <p className="text-muted-foreground">
-                Email summaries feature coming soon - you'll be able to receive these reports directly in your inbox.
-              </p>
             </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Past Weekly Reports</CardTitle>
+                <CardDescription>View archive of generated weekly summaries</CardDescription>
+              </div>
+              <Button onClick={() => generateReport.mutate()} disabled={generateReport.isPending}>
+                {generateReport.isPending ? "Generating..." : "Generate Report Now"}
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {reports?.map((report) => (
+                  <div key={report.id} className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 rounded-full bg-primary/10 text-primary">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold">Weekly Report - {format(new Date(report.report_date), "MMM d, yyyy")}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Status: <Badge variant={report.status === 'sent' ? 'default' : 'secondary'}>{report.status}</Badge>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm">
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        View
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {(!reports || reports.length === 0) && (
+                  <p className="text-center text-muted-foreground py-8">
+                    No reports generated yet.
+                  </p>
+                )}
+              </div>
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>

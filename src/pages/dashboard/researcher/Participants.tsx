@@ -2,32 +2,37 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useResearcherData } from "@/hooks/useResearcherData";
-import { Users, Filter, CheckCircle } from "lucide-react";
+import { Users, Filter, CheckCircle, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function ResearcherParticipants() {
   const { data, isLoading } = useResearcherData();
   const [parentFilter, setParentFilter] = useState<string>("all");
   const [childFilter, setChildFilter] = useState<string>("");
+  const [ageFilter, setAgeFilter] = useState<string>("all");
 
   const filteredConsents = data?.consents.filter(consent => {
     const parentEmail = (consent.profiles as any)?.email || "";
     const parentName = (consent.profiles as any)?.name || "";
     const childName = (consent.children as any)?.name || "";
     const anonymousId = (consent.children as any)?.anonymous_id || "";
-    
+    const ageGroup = (consent.children as any)?.age_group || "";
+
     const matchesParent = parentFilter === "all" || parentEmail === parentFilter;
-    const matchesChild = !childFilter || 
+    const matchesChild = !childFilter ||
       childName.toLowerCase().includes(childFilter.toLowerCase()) ||
       anonymousId.toLowerCase().includes(childFilter.toLowerCase());
-    
-    return matchesParent && matchesChild;
+    const matchesAge = ageFilter === "all" || ageGroup === ageFilter;
+
+    return matchesParent && matchesChild && matchesAge;
   }) || [];
 
   const uniqueParents = Array.from(new Set(data?.consents.map(c => (c.profiles as any)?.email).filter(Boolean))) || [];
+  const ageGroups = ["0-2", "3-5", "6-8", "9-11", "12-14", "15-17", "18+"];
 
   if (isLoading) {
     return (
@@ -63,7 +68,7 @@ export default function ResearcherParticipants() {
         <Card className="p-4">
           <div className="flex items-center gap-4">
             <Filter className="h-5 w-5 text-muted-foreground" />
-            <div className="flex-1 flex gap-4">
+            <div className="flex-1 flex gap-4 flex-wrap">
               <Select value={parentFilter} onValueChange={setParentFilter}>
                 <SelectTrigger className="w-[250px]">
                   <SelectValue placeholder="Filter by parent" />
@@ -77,6 +82,21 @@ export default function ResearcherParticipants() {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Select value={ageFilter} onValueChange={setAgeFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by age" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Ages</SelectItem>
+                  {ageGroups.map((age) => (
+                    <SelectItem key={age} value={age}>
+                      {age} years
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Input
                 placeholder="Search by child name or ID..."
                 value={childFilter}
@@ -173,6 +193,19 @@ export default function ResearcherParticipants() {
                               </Badge>
                             )}
                           </div>
+                          {consent.data_scope_location && (
+                            <div className="mt-4">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                                onClick={() => window.location.href = `/dashboard/researcher/participants/${consent.child_id}/location`}
+                              >
+                                <MapPin className="h-4 w-4" />
+                                View Location History
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
