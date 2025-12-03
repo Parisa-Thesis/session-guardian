@@ -43,32 +43,29 @@ const Contact = () => {
           </CardHeader>
           <CardContent className="space-y-2">
             <p className="text-muted-foreground">{t('contact.supportDesc')}</p>
-            <a 
-              href="mailto:support@screenguardian.edu" 
+            <a
+              href="mailto:parisa.bakhshaee@studserv.uni-leipzig.de"
               className="text-primary hover:underline block"
             >
-              support@screenguardian.edu
+              parisa.bakhshaee@studserv.uni-leipzig.de
             </a>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-primary" />
-              {t('contact.researchInquiries')}
+              © Universität Leipzig
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <p className="text-muted-foreground">{t('contact.researchDesc')}</p>
-            <a 
-              href="mailto:research@screenguardian.edu" 
-              className="text-primary hover:underline block"
-            >
-              research@screenguardian.edu
-            </a>
+            <p className="text-muted-foreground">Child Development and Intervention MSc</p>
+            <p className="text-muted-foreground">Academic adviser: Professor Dr Tina Malti</p>
+            <p className="text-muted-foreground">Researcher Assistant: Parisa bakhshaee</p>
           </CardContent>
         </Card>
+
+
 
         <Card>
           <CardHeader>
@@ -79,7 +76,7 @@ const Contact = () => {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-2">{t('contact.phoneHours')}</p>
-            <p className="font-medium">+1 (555) 123-4567</p>
+            <p className="font-medium">+49 (341) 97-32079</p>
           </CardContent>
         </Card>
 
@@ -92,10 +89,11 @@ const Contact = () => {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              University Research Center<br />
-              Digital Wellbeing Lab<br />
-              Building A, Room 301<br />
-              University Campus
+              © Universität Leipzig<br />
+              Humboldt Science Centre for Child Development,<br />
+              Jahnallee 59, <br />
+              04109 Leipzig, Germany<br />
+
             </p>
           </CardContent>
         </Card>
